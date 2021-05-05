@@ -769,7 +769,197 @@ end
 
 
 
-# Now I write a function which 
+
+"""
+    countMiddle2D(N,ind,edo,HPlist)
+
+Given a 2D array size `N`, an index `ind`, a matrix encoding the aminoacids positions `edo`, and an array containing 
+the sequence of H,P aminoacids `HPlist`; counts the number of possible pull moves for the middle amino acids, and stores the possible coordinates. 
+"""
+function countMiddle2D(N,ind,edo,HPlist)
+    
+    # I set up the protein within the array.
+    red=makeLattice(N,edo,HPlist)
+    display(red)
+    
+    # `newedo` will contain the amino acids´ final positions.
+    newedo=copy(edo)
+        
+    # Now we check wether a pull-move is possible for the selected vertex. A diagonal space must be empty. Also, the empty
+    # diagonal space must be adjacent to the amino acid correpsonding to `ind+1`.
+    # First I check where `ind+1` is.
+    xplus=edo[ind+1,1]
+    yplus=edo[ind+1,2] # Position of `ind+1`
+    x=edo[ind,1]
+    y=edo[ind,2] # Position of `ind`
+    dx=x-xplus
+    dy=y-yplus
+    rel1= dx > 0 && dy == 0
+    rel2= dx == 0 && dy < 0
+    rel3= dx < 0 && dy == 0
+    rel4= dx == 0 && dy > 0 # Conditions single out possible diagonal spaces to move to.
+
+    # Next we store the possible diagonal spaces.
+    diagspaces=ones(Int8,4)
+    if rel1 
+        diagspaces[1]=red[x-1,y+1]
+        diagspaces[4]=red[x-1,y-1]
+    elseif rel2 
+        diagspaces[1]=red[x-1,y+1]
+        diagspaces[2]=red[x+1,y+1]
+    elseif rel3 
+        diagspaces[2]=red[x+1,y+1]
+        diagspaces[3]=red[x+1,y-1]
+    elseif rel4 
+        diagspaces[3]=red[x+1,y-1]
+        diagspaces[4]=red[x-1,y-1]
+    end
+
+
+    v1=red[x-1,y]
+    v2=red[x,y+1]
+    v3=red[x+1,y]
+    v4=red[x,y-1]  # Possible sites to move `ind-1` to.
+
+    cond1= edo[ind-1,:] == [x-1,y]
+    cond2= edo[ind-1,:] == [x,y+1]
+    cond3= edo[ind-1,:] == [x+1,y]
+    cond4= edo[ind-1,:] == [x,y-1] # `edo[ind-1,:]` is the current location on the array `red` of `ind-1`.
+    
+    condi1= (v1 == 0) || cond1 # Either the place is empty, or `ind-1` is already there.
+    condi2= (v2 == 0) || cond2
+    condi3= (v3 == 0) || cond3
+    condi4= (v4 == 0) || cond4
+    condis=Bool[condi1 || condi2, condi2 || condi3, condi3 || condi4, condi4 || condi1]
+
+
+
+    indices=Int8[]
+    for k in 1:4
+        space=diagspaces[k]
+        # If the diagonal space is empty, and the adjacent space is either empty or occupied by `ind-1` ,
+        # pull move might be possible.
+        if (space == 0 && condis[k] ) 
+            push!(indices,k)
+        else
+            continue
+        end
+    end
+
+
+    # I have an array with the possible spaces to move to. Now I have to check whether there is space for the amino acid 
+    # correpsonding to `ind-1` to move to.
+    if isempty(indices) == false
+
+
+        coordinates1=[] # Possible coordinates for `ind`
+        coordinates2=[] # Possible coordinates for `ind-1`.
+        xys=zeros(Int8,2) # To be filled with the position `ind-1` might be needed to be moved to.
+
+        for el in indices
+
+            if el == 1
+                if condi1  # Either `v1` is empty or it is already occupied by `ind-1`. A pull move is all but assured.
+                    singleMove2D(red,[x,y],[x-1,y+1]) # Make the move.
+                    newedo[ind,:]=[x-1,y+1] # Record the change.
+                    xys[:]=[x-1,y]
+                    break
+                elseif condi2 
+                    singleMove2D(red,[x,y],[x-1,y+1])
+                    newedo[ind,:]=[x-1,y+1]
+                    xys[:]=[x,y+1]
+                    break
+                end
+
+
+            elseif el == 2
+                if condi2 
+                    singleMove2D(red,[x,y],[x+1,y+1])
+                    newedo[ind,:]=[x+1,y+1]
+                    xys[:]=[x,y+1]
+                    break
+                elseif condi3 
+                    singleMove2D(red,[x,y],[x+1,y+1])
+                    newedo[ind,:]=[x+1,y+1]
+                    xys[:]=[x+1,y]
+                    break  
+                end
+
+
+            elseif el == 3 
+                if condi3 
+                    singleMove2D(red,[x,y],[x+1,y-1])
+                    newedo[ind,:]=[x+1,y-1]
+                    xys[:]=[x+1,y]
+                    break
+                elseif condi4 
+                    singleMove2D(red,[x,y],[x+1,y-1])
+                    newedo[ind,:]=[x+1,y-1]
+                    xys[:]=[x,y-1]
+                    break
+                end
+
+
+            elseif el == 4 
+                if condi4 
+                    singleMove2D(red,[x,y],[x-1,y-1])
+                    newedo[ind,:]=[x-1,y-1]
+                    xys[:]=[x,y-1]
+                    break
+                elseif condi1 
+                    singleMove2D(red,[x,y],[x-1,y-1])
+                    newedo[ind,:]=[x-1,y-1]
+                    ys[:]=[x-1,y]
+                    break
+                end
+            end
+        end
+        
+        # Now I have in `xys` the potential new position for `ind-1`. If the current configuration is valid, I don´t make the move
+        # and the full pull move has been succesfully completed.
+        if validConf(N,ind,newedo,HPlist) != true
+            singleMove2D(red,edo[ind-1,:],xys) # Makes the move.
+            newedo[ind-1,:]=xys[:] # Records the change.
+        end
+
+    end
+    
+
+    # If all went well, a move has been done, now I have to check whether the current configuration is valid.
+    stateconf=validConf(N,ind-1,newedo,HPlist) 
+    for k in ind:-1:3
+        if stateconf == false
+            op=edo[k-2,:] # Old position.
+            np=edo[k,:] # New position.
+            singleMove2D(red,op,np) 
+            newedo[k-2,:]=np 
+            stateconf=validConf(N,k-2,newedo,HPlist) # Check whether the new configuration is valid.
+        else
+            break
+        end
+    end
+
+    return (red,newedo) # Returns everything neccesary to reproduce the final configuration.
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 """
     pullMove2D(N,ind,edo,HPlist)
 
@@ -938,10 +1128,6 @@ function pullMove2D(N,ind,edo,HPlist)
 
     return (red,newedo) # Returns everything neccesary to reproduce the final configuration.
 end
-
-
-
-
 
 
 

@@ -833,7 +833,6 @@ function countMiddle2D(N,ind,edo,HPlist)
     condis=Bool[condi1 || condi2, condi2 || condi3, condi3 || condi4, condi4 || condi1]
 
 
-
     indices=Int8[]
     for k in 1:4
         space=diagspaces[k]
@@ -846,100 +845,62 @@ function countMiddle2D(N,ind,edo,HPlist)
         end
     end
 
-
     # I have an array with the possible spaces to move to. Now I have to check whether there is space for the amino acid 
     # correpsonding to `ind-1` to move to.
+    coordinates1=[] # Possible coordinates for `ind`
+    coordinates2=[] # Possible coordinates for `ind-1`.
     if isempty(indices) == false
-
-
-        coordinates1=[] # Possible coordinates for `ind`
-        coordinates2=[] # Possible coordinates for `ind-1`.
-        xys=zeros(Int8,2) # To be filled with the position `ind-1` might be needed to be moved to.
-
         for el in indices
 
             if el == 1
                 if condi1  # Either `v1` is empty or it is already occupied by `ind-1`. A pull move is all but assured.
-                    singleMove2D(red,[x,y],[x-1,y+1]) # Make the move.
-                    newedo[ind,:]=[x-1,y+1] # Record the change.
-                    xys[:]=[x-1,y]
-                    break
+                    push!(coordinates1,[x-1,y+1]) # Record the possible new coordinates for `ind`.
+                    push!(coordinates2,[x-1,y])   # Record the possible new coordinates for `ind-1`.
                 elseif condi2 
-                    singleMove2D(red,[x,y],[x-1,y+1])
-                    newedo[ind,:]=[x-1,y+1]
-                    xys[:]=[x,y+1]
-                    break
+                    push!(coordinates1,[x-1,y+1]) 
+                    push!(coordinates2,[x,y+1])   
                 end
-
 
             elseif el == 2
                 if condi2 
-                    singleMove2D(red,[x,y],[x+1,y+1])
-                    newedo[ind,:]=[x+1,y+1]
-                    xys[:]=[x,y+1]
-                    break
+                    push!(coordinates1,[x+1,y+1]) 
+                    push!(coordinates2,[x,y+1]) 
                 elseif condi3 
-                    singleMove2D(red,[x,y],[x+1,y+1])
-                    newedo[ind,:]=[x+1,y+1]
-                    xys[:]=[x+1,y]
-                    break  
+                    push!(coordinates1,[x+1,y+1]) 
+                    push!(coordinates2,[x+1,y])  
                 end
-
 
             elseif el == 3 
                 if condi3 
-                    singleMove2D(red,[x,y],[x+1,y-1])
-                    newedo[ind,:]=[x+1,y-1]
-                    xys[:]=[x+1,y]
-                    break
+                    push!(coordinates1,[x+1,y-1]) 
+                    push!(coordinates2,[x+1,y])  
                 elseif condi4 
-                    singleMove2D(red,[x,y],[x+1,y-1])
-                    newedo[ind,:]=[x+1,y-1]
-                    xys[:]=[x,y-1]
-                    break
+                    push!(coordinates1,[x+1,y-1]) 
+                    push!(coordinates2,[x,y-1]) 
                 end
-
 
             elseif el == 4 
                 if condi4 
-                    singleMove2D(red,[x,y],[x-1,y-1])
-                    newedo[ind,:]=[x-1,y-1]
-                    xys[:]=[x,y-1]
-                    break
+                    push!(coordinates1,[x-1,y-1]) 
+                    push!(coordinates2,[x,y-1])
                 elseif condi1 
-                    singleMove2D(red,[x,y],[x-1,y-1])
-                    newedo[ind,:]=[x-1,y-1]
-                    ys[:]=[x-1,y]
-                    break
+                    push!(coordinates1,[x-1,y-1]) 
+                    push!(coordinates2,[x-1,y])
                 end
             end
-        end
-        
-        # Now I have in `xys` the potential new position for `ind-1`. If the current configuration is valid, I don´t make the move
-        # and the full pull move has been succesfully completed.
-        if validConf(N,ind,newedo,HPlist) != true
-            singleMove2D(red,edo[ind-1,:],xys) # Makes the move.
-            newedo[ind-1,:]=xys[:] # Records the change.
         end
 
     end
     
+    # Now I have in `coordinates1,coordinates2` the potential new positions for `ind,ind-1`. The length of these arrays is 
+    # the number of possible pull moves por the given index.
+    numpull=length(coordinates1)
 
-    # If all went well, a move has been done, now I have to check whether the current configuration is valid.
-    stateconf=validConf(N,ind-1,newedo,HPlist) 
-    for k in ind:-1:3
-        if stateconf == false
-            op=edo[k-2,:] # Old position.
-            np=edo[k,:] # New position.
-            singleMove2D(red,op,np) 
-            newedo[k-2,:]=np 
-            stateconf=validConf(N,k-2,newedo,HPlist) # Check whether the new configuration is valid.
-        else
-            break
-        end
-    end
+    # I turn the 1 dimensional arrays into matrices for easier use.
+    coordinates1=transpose(hcat(coordinates1...))
+    coordinates2=transpose(hcat(coordinates2...))
 
-    return (red,newedo) # Returns everything neccesary to reproduce the final configuration.
+    return (numpull,coordinates1,coordinates2) # Returns everything neccesary to reproduce the final configuration.
 end
 
 

@@ -34,6 +34,7 @@ end
 
 
 
+
 """
     periodicArr2D(A,indices)
 
@@ -47,6 +48,13 @@ function periodicArr2D(A,indices)
         
     return A[Ix,Iy]
 end
+
+
+
+
+
+
+
 
 
 
@@ -98,61 +106,108 @@ end
 
 
 
-
-
-
-
+@enum directions::Int8 begin
+        forwards=1
+        backwards=2
+    end
 # Now, the task is to write a function which determines wether a given protein sequence is valid.
 """
-    validConf(N,ind,edo,HPlist)
+    validConf(N,ind,edo,HPlist,dir)
 
-Given a 2D array of side `N`, a matrix encoding the aminoacids positions `edo`, an index `ind` , and an array containing 
-the sequence of H,P aminoacids `HPlist`; determines whether the protein structure is valid or not.
+Given a 2D array of side `N`, a matrix encoding the aminoacids positions `edo`, an index `ind` , an array containing 
+the sequence of H,P aminoacids `HPlist`, and a direction `dir`; determines whether the protein structure is valid or not.
 """
-function validConf(N,ind,edo,HPlist)
+function validConf(N,ind,edo,HPlist,dir)
     
     # I set up the protein within the array.
     red=makeLattice(N,edo,HPlist)
+
     
-    # Next, I iterate over the protein´s vertices, computing the "distance" to the next vertix.
+    # Next, I iterate over the protein´s vertices, computing the "distance" to the next vertix. The direction in which I check the
+    # structure is determined by `dir`.
     ans=true
-    if ind !=1
-        for j in ind:-1:2
-            x1,y1=edo[j,:]
-            x1,y1=periodicInd2D(red,[x1,y1]) # Make the indices periodic.
-            x2,y2=edo[j-1,:]
-            x2,y2=periodicInd2D(red,[x2,y2]) # Make the indices periodic.
-            dx=abs(x1-x2)
-            dy=abs(y1-y2)
 
-            # Before assesing the validity of the sequence, we need to consider the case where the two elements being compared
-            # are located at the ends of the array `red`. In such case, the distance between them doesn´t necessarily exceed the
-            # limit.
-
-            xcond1= x1 == 1 && x2 == N
-            xcond2= x1 == N && x2 == 1
-            xcond= xcond1 || xcond2 
-            
-            ycond1= y1 == 1 && y2 == N
-            ycond2= y1 == N && y2 == 1
-            ycond= ycond1 || ycond2
-
-            if dx > 1
-                if xcond == false
-                    ans=false
-                    break
+    if dir == backwards
+        if ind !=1
+            for j in ind:-1:2
+                x1,y1=edo[j,:]
+                x1,y1=periodicInd2D(red,[x1,y1]) # Make the indices periodic.
+                x2,y2=edo[j-1,:]
+                x2,y2=periodicInd2D(red,[x2,y2]) # Make the indices periodic.
+                dx=abs(x1-x2)
+                dy=abs(y1-y2)
+    
+                # Before assesing the validity of the sequence, we need to consider the case where the two elements being compared
+                # are located at the ends of the array `red`. In such case, the distance between them doesn´t necessarily exceed the
+                # limit.
+    
+                xcond1= x1 == 1 && x2 == N
+                xcond2= x1 == N && x2 == 1
+                xcond= xcond1 || xcond2 
+                
+                ycond1= y1 == 1 && y2 == N
+                ycond2= y1 == N && y2 == 1
+                ycond= ycond1 || ycond2
+    
+                if dx > 1
+                    if xcond == false
+                        ans=false
+                        break
+                    end
+                elseif dy > 1
+                    if ycond == false
+                        ans=false
+                        break
+                    end
                 end
-            elseif dy > 1
-                if ycond == false
-                    ans=false
-                    break
+            end
+        end
+
+
+
+
+    elseif dir == forwards
+        if ind != length(HPlist)
+            for j in ind:length(HPlist)-1
+                x1,y1=edo[j,:]
+                x1,y1=periodicInd2D(red,[x1,y1]) # Make the indices periodic.
+                x2,y2=edo[j+1,:]
+                x2,y2=periodicInd2D(red,[x2,y2]) # Make the indices periodic.
+                dx=abs(x1-x2)
+                dy=abs(y1-y2)
+    
+                # Before assesing the validity of the sequence, we need to consider the case where the two elements being compared
+                # are located at the ends of the array `red`. In such case, the distance between them doesn´t necessarily exceed the
+                # limit.
+    
+                xcond1= x1 == 1 && x2 == N
+                xcond2= x1 == N && x2 == 1
+                xcond= xcond1 || xcond2 
+                
+                ycond1= y1 == 1 && y2 == N
+                ycond2= y1 == N && y2 == 1
+                ycond= ycond1 || ycond2
+    
+                if dx > 1
+                    if xcond == false
+                        ans=false
+                        break
+                    end
+                elseif dy > 1
+                    if ycond == false
+                        ans=false
+                        break
+                    end
                 end
             end
         end
     end
+
+    
 return ans
 end
             
+
 
 
 
@@ -209,6 +264,8 @@ end
 
 
 
+
+
 """
     function makecross2D(red,inds)
 
@@ -224,6 +281,10 @@ function makecross2D(red,inds)
     return cross
 end
     
+
+
+
+
 
 
 
@@ -277,6 +338,8 @@ function distance2D(red,inds1,inds2)
     d=dx+dy
     return (d,dx,dy)
 end
+
+
 
 
 
@@ -780,11 +843,7 @@ function countMiddle2D(N,ind,edo,HPlist)
     
     # I set up the protein within the array.
     red=makeLattice(N,edo,HPlist)
-    display(red)
-    
-    # `newedo` will contain the amino acids´ final positions.
-    newedo=copy(edo)
-        
+
     # Now we check wether a pull-move is possible for the selected vertex. A diagonal space must be empty. Also, the empty
     # diagonal space must be adjacent to the amino acid correpsonding to `ind+1`.
     # First I check where `ind+1` is.
@@ -921,11 +980,13 @@ end
 
 
 
+# Now that I have the necessary function to count the number of pull moves and the coordinates of such moves, I write a function to actually
+# perform the moves.
 """
     pullMove2D(N,ind,edo,HPlist)
 
 Given a 2D array size `N`, an index `ind`, a matrix encoding the aminoacids positions `edo`, and an array containing 
-the sequence of H,P aminoacids `HPlist`; counts the number of possible pull moves for the middle amino acids, and stores the possible coordinates. 
+the sequence of H,P aminoacids `HPlist`; performs a full pull move for the given index. 
 """
 function pullMove2D(N,ind,edo,HPlist)
     
@@ -935,160 +996,106 @@ function pullMove2D(N,ind,edo,HPlist)
     
     # `newedo` will contain the amino acids´ final positions.
     newedo=copy(edo)
-        
-    # Now we check wether a pull-move is possible for the selected vertex. A diagonal space must be empty. Also, the empty
-    # diagonal space must be adjacent to the amino acid correpsonding to `ind+1`.
-    # First I check where `ind+1` is.
-    xplus=edo[ind+1,1]
-    yplus=edo[ind+1,2] # Position of `ind+1`
-    x=edo[ind,1]
-    y=edo[ind,2] # Position of `ind`
-    dx=x-xplus
-    dy=y-yplus
-    rel1= dx > 0 && dy == 0
-    rel2= dx == 0 && dy < 0
-    rel3= dx < 0 && dy == 0
-    rel4= dx == 0 && dy > 0 # Conditions single out possible diagonal spaces to move to.
-
-    # Next we store the possible diagonal spaces.
-    diagspaces=ones(Int8,4)
-    if rel1 
-        diagspaces[1]=red[x-1,y+1]
-        diagspaces[4]=red[x-1,y-1]
-    elseif rel2 
-        diagspaces[1]=red[x-1,y+1]
-        diagspaces[2]=red[x+1,y+1]
-    elseif rel3 
-        diagspaces[2]=red[x+1,y+1]
-        diagspaces[3]=red[x+1,y-1]
-    elseif rel4 
-        diagspaces[3]=red[x+1,y-1]
-        diagspaces[4]=red[x-1,y-1]
-    end
-
-
-    v1=red[x-1,y]
-    v2=red[x,y+1]
-    v3=red[x+1,y]
-    v4=red[x,y-1]  # Possible sites to move `ind-1` to.
-
-    cond1= edo[ind-1,:] == [x-1,y]
-    cond2= edo[ind-1,:] == [x,y+1]
-    cond3= edo[ind-1,:] == [x+1,y]
-    cond4= edo[ind-1,:] == [x,y-1] # `edo[ind-1,:]` is the current location on the array `red` of `ind-1`.
-    
-    condi1= (v1 == 0) || cond1 # Either the place is empty, or `ind-1` is already there.
-    condi2= (v2 == 0) || cond2
-    condi3= (v3 == 0) || cond3
-    condi4= (v4 == 0) || cond4
-    condis=Bool[condi1 || condi2, condi2 || condi3, condi3 || condi4, condi4 || condi1]
 
 
 
-    indices=Int8[]
-    for k in 1:4
-        space=diagspaces[k]
-        # If the diagonal space is empty, and the adjacent space is either empty or occupied by `ind-1` ,
-        # pull move might be possible.
-        if (space == 0 && condis[k] ) 
-            push!(indices,k)
-        else
-            continue
-        end
-    end
 
+    # Type of pull move depends on the value of `ind`.
+    if ind == 1
+        numpull,coordinates1,coordinates2=countFirst2D(N,edo,HPlist)
+        # For the time being, I wil choose the first possible pull move.
+        singleMove2D(red,edo[ind,:],coordinates2[1,:]) # Move `ind`.
+        newedo[ind,:]=coordinates2[1,:] # Record the change.
+        singleMove2D(red,edo[ind+1,:],coordinates1[1,:]) # Makes the move.
+        newedo[ind+1,:]=coordinates1[1,:] # Record the change.
 
-    # I have an array with the possible spaces to move to. Now I have to check whether there is space for the amino acid 
-    # correpsonding to `ind-1` to move to.
-    if isempty(indices) == false
-
-        xys=zeros(Int8,2) # To be filled with the position `ind-1` might be needed to be moved to.
-
-        for el in indices
-
-            if el == 1
-                if condi1  # Either `v1` is empty or it is already occupied by `ind-1`. A pull move is all but assured.
-                    singleMove2D(red,[x,y],[x-1,y+1]) # Make the move.
-                    newedo[ind,:]=[x-1,y+1] # Record the change.
-                    xys[:]=[x-1,y]
-                    break
-                elseif condi2 
-                    singleMove2D(red,[x,y],[x-1,y+1])
-                    newedo[ind,:]=[x-1,y+1]
-                    xys[:]=[x,y+1]
-                    break
-                end
-
-
-            elseif el == 2
-                if condi2 
-                    singleMove2D(red,[x,y],[x+1,y+1])
-                    newedo[ind,:]=[x+1,y+1]
-                    xys[:]=[x,y+1]
-                    break
-                elseif condi3 
-                    singleMove2D(red,[x,y],[x+1,y+1])
-                    newedo[ind,:]=[x+1,y+1]
-                    xys[:]=[x+1,y]
-                    break  
-                end
-
-
-            elseif el == 3 
-                if condi3 
-                    singleMove2D(red,[x,y],[x+1,y-1])
-                    newedo[ind,:]=[x+1,y-1]
-                    xys[:]=[x+1,y]
-                    break
-                elseif condi4 
-                    singleMove2D(red,[x,y],[x+1,y-1])
-                    newedo[ind,:]=[x+1,y-1]
-                    xys[:]=[x,y-1]
-                    break
-                end
-
-
-            elseif el == 4 
-                if condi4 
-                    singleMove2D(red,[x,y],[x-1,y-1])
-                    newedo[ind,:]=[x-1,y-1]
-                    xys[:]=[x,y-1]
-                    break
-                elseif condi1 
-                    singleMove2D(red,[x,y],[x-1,y-1])
-                    newedo[ind,:]=[x-1,y-1]
-                    ys[:]=[x-1,y]
-                    break
-                end
+        # Now I have to check whether the current configuration is valid.
+        stateconf=validConf(N,ind+1,newedo,HPlist,forwards) 
+        for k in ind+2:length(HPlist)
+            if stateconf == false
+                op=edo[k,:] # Old position.
+                np=edo[k-2,:] # New position.
+                singleMove2D(red,op,np) 
+                newedo[k,:]=np 
+                stateconf=validConf(N,k,newedo,HPlist,forwards) # Check whether the new configuration is valid.
+            else
+                break
             end
         end
+
+
+
+
+
+
+    elseif ind == length(HPlist)
+        numpull,coordinates1,coordinates2=countLast2D(N,edo,HPlist)
+        # For the time being, I wil choose the first possible pull move.
+        singleMove2D(red,edo[ind,:],coordinates2[1,:]) # Move `ind`.
+        newedo[ind,:]=coordinates2[1,:] # Record the change.
+        singleMove2D(red,edo[ind-1,:],coordinates1[1,:]) # Makes the move.
+        newedo[ind-1,:]=coordinates1[1,:] # Record the change.
+
+        # Now I have to check whether the current configuration is valid.
+        stateconf=validConf(N,ind-1,newedo,HPlist,backwards) 
+        for k in ind:-1:3
+            if stateconf == false
+                op=edo[k-2,:] # Old position.
+                np=edo[k,:] # New position.
+                singleMove2D(red,op,np) 
+                newedo[k-2,:]=np 
+                stateconf=validConf(N,k-2,newedo,HPlist,backwards) # Check whether the new configuration is valid.
+            else
+                break
+            end
+        end
+
+
+
+
+
+
+    else
+        numpull,coordinates1,coordinates2=countMiddle2D(N,ind,edo,HPlist)
+        # For the time being, I wil choose the first possible pull move.
+        singleMove2D(red,edo[ind,:],coordinates1[1,:]) # Move `ind`.
+        newedo[ind,:]=coordinates1[1,:] # Record the change.
         
-        # Now I have in `xys` the potential new position for `ind-1`. If the current configuration is valid, I don´t make the move
+        # Now I have in `coordinates2` the potential new position for `ind-1`. If the current configuration is valid, I don´t make the move
         # and the full pull move has been succesfully completed.
-        if validConf(N,ind,newedo,HPlist) != true
-            singleMove2D(red,edo[ind-1,:],xys) # Makes the move.
-            newedo[ind-1,:]=xys[:] # Records the change.
+        if validConf(N,ind,newedo,HPlist,backwards) != true
+            singleMove2D(red,edo[ind-1,:],coordinates2[1,:]) # Makes the move.
+            newedo[ind-1,:]=coordinates2[1,:] # Record the change.
         end
 
-    end
-    
-
-    # If all went well, a move has been done, now I have to check whether the current configuration is valid.
-    stateconf=validConf(N,ind-1,newedo,HPlist) 
-    for k in ind:-1:3
-        if stateconf == false
-            op=edo[k-2,:] # Old position.
-            np=edo[k,:] # New position.
-            singleMove2D(red,op,np) 
-            newedo[k-2,:]=np 
-            stateconf=validConf(N,k-2,newedo,HPlist) # Check whether the new configuration is valid.
-        else
-            break
+        # If all went well, a move has been done, now I have to check whether the current configuration is valid.
+        stateconf=validConf(N,ind-1,newedo,HPlist,backwards) 
+        for k in ind:-1:3
+            if stateconf == false
+                op=edo[k-2,:] # Old position.
+                np=edo[k,:] # New position.
+                singleMove2D(red,op,np) 
+                newedo[k-2,:]=np 
+                stateconf=validConf(N,k-2,newedo,HPlist,backwards) # Check whether the new configuration is valid.
+            else
+                break
+            end
         end
+
     end
 
     return (red,newedo) # Returns everything neccesary to reproduce the final configuration.
 end
+
+
+
+
+
+
+
+
+
+
 
 
 

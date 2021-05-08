@@ -583,7 +583,7 @@ function countFirst2D(N,edo,HPlist)
 
         if validConfEnd2D(red,1,[xa,ya],edo,HPlist) != true
             deleteat!(coordinates1,k)
-            deleteat!(coordinates2,k) # Delete possible coordinates, doesn´t satisfy the condition.
+            deleteat!(coordinates2,k) # Delete possible coordinates that don´t satisfy the condition.
         end
     end
 
@@ -837,7 +837,8 @@ end
     countMiddle2D(N,ind,edo,HPlist)
 
 Given a 2D array size `N`, an index `ind`, a matrix encoding the aminoacids positions `edo`, and an array containing 
-the sequence of H,P aminoacids `HPlist`; counts the number of possible pull moves for the middle amino acids, and stores the possible coordinates. 
+the sequence of H,P aminoacids `HPlist`; counts the number of possible pull moves for the middle amino acids, and 
+stores the possible coordinates. 
 """
 function countMiddle2D(N,ind,edo,HPlist)
     
@@ -845,45 +846,76 @@ function countMiddle2D(N,ind,edo,HPlist)
     red=makeLattice(N,edo,HPlist)
 
     # Now we check wether a pull-move is possible for the selected vertex. A diagonal space must be empty. Also, the empty
-    # diagonal space must be adjacent to the amino acid correpsonding to `ind+1`.
-    # First I check where `ind+1` is.
+    # diagonal space must be adjacent to the amino acid correpsonding to `ind+1` or to `ind-1`.
+    # First I check where `ind+1,ind-1` are.
     xplus=edo[ind+1,1]
     yplus=edo[ind+1,2] # Position of `ind+1`
+    xminus=edo[ind-1,1]
+    yminus=edo[ind-1,2] # Position of `ind-1`
     x=edo[ind,1]
     y=edo[ind,2] # Position of `ind`
+    
     dx=x-xplus
     dy=y-yplus
+    lx=x-xminus
+    ly=y-yminus
+
     rel1= dx > 0 && dy == 0
     rel2= dx == 0 && dy < 0
     rel3= dx < 0 && dy == 0
     rel4= dx == 0 && dy > 0 # Conditions single out possible diagonal spaces to move to.
 
+    rela1= lx > 0 && ly == 0
+    rela2= lx == 0 && ly < 0
+    rela3= lx < 0 && ly == 0
+    rela4= lx == 0 && ly > 0 # Conditions single out possible diagonal spaces to move to.
+
     # Next we store the possible diagonal spaces.
-    diagspaces=ones(Int8,4)
+    diagspaces1=ones(Int8,4)
     if rel1 
-        diagspaces[1]=red[x-1,y+1]
-        diagspaces[4]=red[x-1,y-1]
+        diagspaces1[1]=red[x-1,y+1]
+        diagspaces1[4]=red[x-1,y-1]
     elseif rel2 
-        diagspaces[1]=red[x-1,y+1]
-        diagspaces[2]=red[x+1,y+1]
+        diagspaces1[1]=red[x-1,y+1]
+        diagspaces1[2]=red[x+1,y+1]
     elseif rel3 
-        diagspaces[2]=red[x+1,y+1]
-        diagspaces[3]=red[x+1,y-1]
+        diagspaces1[2]=red[x+1,y+1]
+        diagspaces1[3]=red[x+1,y-1]
     elseif rel4 
-        diagspaces[3]=red[x+1,y-1]
-        diagspaces[4]=red[x-1,y-1]
+        diagspaces1[3]=red[x+1,y-1]
+        diagspaces1[4]=red[x-1,y-1]
+    end
+
+    diagspaces2=ones(Int8,4)
+    if rela1 
+        diagspaces2[1]=red[x-1,y+1]
+        diagspaces2[4]=red[x-1,y-1]
+    elseif rela2 
+        diagspaces2[1]=red[x-1,y+1]
+        diagspaces2[2]=red[x+1,y+1]
+    elseif rela3 
+        diagspaces2[2]=red[x+1,y+1]
+        diagspaces2[3]=red[x+1,y-1]
+    elseif rela4 
+        diagspaces2[3]=red[x+1,y-1]
+        diagspaces2[4]=red[x-1,y-1]
     end
 
 
     v1=red[x-1,y]
     v2=red[x,y+1]
     v3=red[x+1,y]
-    v4=red[x,y-1]  # Possible sites to move `ind-1` to.
+    v4=red[x,y-1]  # Possible sites to move `ind-1,ind+1` to.
 
     cond1= edo[ind-1,:] == [x-1,y]
     cond2= edo[ind-1,:] == [x,y+1]
     cond3= edo[ind-1,:] == [x+1,y]
     cond4= edo[ind-1,:] == [x,y-1] # `edo[ind-1,:]` is the current location on the array `red` of `ind-1`.
+
+    condit1= edo[ind+1,:] == [x-1,y]
+    condit2= edo[ind+1,:] == [x,y+1]
+    condit3= edo[ind+1,:] == [x+1,y]
+    condit4= edo[ind+1,:] == [x,y-1] # `edo[ind+1,:]` is the current location on the array `red` of `ind+1`.
     
     condi1= (v1 == 0) || cond1 # Either the place is empty, or `ind-1` is already there.
     condi2= (v2 == 0) || cond2
@@ -891,14 +923,32 @@ function countMiddle2D(N,ind,edo,HPlist)
     condi4= (v4 == 0) || cond4
     condis=Bool[condi1 || condi2, condi2 || condi3, condi3 || condi4, condi4 || condi1]
 
+    conditio1= (v1 == 0) || condit1 # Either the place is empty, or `ind+1` is already there.
+    conditio2= (v2 == 0) || condit2
+    conditio3= (v3 == 0) || condit3
+    conditio4= (v4 == 0) || condit4
+    condists=Bool[conditio1 || conditio2, conditio2 || conditio3, conditio3 || conditio4, conditio4 || conditio1]
+
 
     indices=Int8[]
     for k in 1:4
-        space=diagspaces[k]
+        space=diagspaces1[k]
         # If the diagonal space is empty, and the adjacent space is either empty or occupied by `ind-1` ,
         # pull move might be possible.
         if (space == 0 && condis[k] ) 
             push!(indices,k)
+        else
+            continue
+        end
+    end
+
+    indices2=Int8[]
+    for k in 1:4
+        space=diagspaces2[k]
+        # If the diagonal space is empty, and the adjacent space is either empty or occupied by `ind+1` ,
+        # pull move might be possible.
+        if (space == 0 && condists[k] ) 
+            push!(indices2,k)
         else
             continue
         end
@@ -951,16 +1001,147 @@ function countMiddle2D(N,ind,edo,HPlist)
 
     end
     
+
+
+    coordinatesi=[] # Possible coordinates for `ind`
+    coordinatesii=[] # Possible coordinates for `ind+1`.
+    if isempty(indices2) == false
+        for el in indices2
+
+            if el == 1
+                if condi1  # Either `v1` is empty or it is already occupied by `ind+1`. A pull move is all but assured.
+                    push!(coordinatesi,[x-1,y+1]) # Record the possible new coordinates for `ind`.
+                    push!(coordinatesii,[x-1,y])   # Record the possible new coordinates for `ind+1`.
+                elseif condi2 
+                    push!(coordinatesi,[x-1,y+1]) 
+                    push!(coordinatesii,[x,y+1])   
+                end
+
+            elseif el == 2
+                if condi2 
+                    push!(coordinatesi,[x+1,y+1]) 
+                    push!(coordinatesii,[x,y+1]) 
+                elseif condi3 
+                    push!(coordinatesi,[x+1,y+1]) 
+                    push!(coordinatesii,[x+1,y])  
+                end
+
+            elseif el == 3 
+                if condi3 
+                    push!(coordinatesi,[x+1,y-1]) 
+                    push!(coordinatesii,[x+1,y])  
+                elseif condi4 
+                    push!(coordinatesi,[x+1,y-1]) 
+                    push!(coordinatesii,[x,y-1]) 
+                end
+
+            elseif el == 4 
+                if condi4 
+                    push!(coordinatesi,[x-1,y-1]) 
+                    push!(coordinatesii,[x,y-1])
+                elseif condi1 
+                    push!(coordinatesi,[x-1,y-1]) 
+                    push!(coordinatesii,[x-1,y])
+                end
+            end
+        end
+
+    end
+
+
+
     # Now I have in `coordinates1,coordinates2` the potential new positions for `ind,ind-1`. The length of these arrays is 
     # the number of possible pull moves por the given index.
-    numpull=length(coordinates1)
+    numpull1=length(coordinates1)
+
+    # Now I have in `coordinatesi,coordinatesii` the potential new positions for `ind,ind+1`. The length of these arrays is 
+    # the number of possible pull moves por the given index.
+    numpull2=length(coordinates1)
+    numpull=numpull1+numpull2
 
     # I turn the 1 dimensional arrays into matrices for easier use.
     coordinates1=transpose(hcat(coordinates1...))
     coordinates2=transpose(hcat(coordinates2...))
 
-    return (numpull,coordinates1,coordinates2) # Returns everything neccesary to reproduce the final configuration.
+    # I turn the 1 dimensional arrays into matrices for easier use.
+    coordinatesi=transpose(hcat(coordinatesi...))
+    coordinatesii=transpose(hcat(coordinatesii...))
+
+    return (numpull,coordinates1,coordinates2,coordinatesi,coordinatesii) # Returns everything neccesary to reproduce the final configuration.
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#Next, I write a function which counts all of the possible pull moves for a given state.
+"""
+    countpull2D(N,edo,HPlist)
+
+Given a 2D array size `N`, a matrix encoding the aminoacids positions `edo`, and an array containing 
+the sequence of H,P aminoacids `HPlist`; pcounts all of the possible pull moves. It also outputs the necessary
+coordinates to perform one of the cpunted moves. 
+"""
+function countpull2D(N,edo,HPlist)
+
+    # Count the moves and store the coordinates for the first monomer.
+    t1,coords2,coords1=countFirst2D(N,edo,HPlist)
+
+    # Count the moves and store the coordinates for the last monomer.
+    t2,coords4,coords3=countLast2D(N,edo,HPlist)
+
+    # Count the moves and store the coordinates for the middle amino acids. 
+    t3=0
+    middlecoords1=[] # Contains the coordinates for `ind`, where `ind` is an index from the middle of the chain.
+    middlecoords2=[] # Contains the coordinates for `ind-1`.
+    middlecoords3=[] # Contains the coordinates for `ind`.
+    middlecoords4=[] # Contains the coordinates for `ind+1`.
+    for j in 2:length(HPlist)-1
+        tj,coords5,coords6,coords7,coords8=countMiddle2D(N,j,edo,HPlist)
+        push!(middlecoords1,coords5)
+        push!(middlecoords2,coords6)
+        push!(middlecoords3,coords7)
+        push!(middlecoords4,coords8)
+        t3=t3+tj
+    end
+
+
+    # Compute the total number of possible pull moves.
+    totalpm=t1+t2+t3
+
+    return(totalpm,coords1,coords2,coords3,coords4,middlecoords1,middlecoords2,middlecoords3,middlecoords4)
+end
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -110,7 +110,8 @@ end
         forwards=1
         backwards=2
     end
-# Now, the task is to write a function which determines wether a given protein sequence is valid.
+# Now, the task is to write a function which determines whether a given protein sequence is valid. This function works 
+# only for the middle indices.
 """
     validConf(N,ind,edo,HPlist,dir)
 
@@ -122,8 +123,7 @@ function validConf(N,ind,edo,HPlist,dir)
     # I set up the protein within the array.
     red=makeLattice(N,edo,HPlist)
 
-    
-    # Next, I iterate over the protein´s vertices, computing the "distance" to the next vertix. The direction in which I check the
+    # Next, I iterate over the protein´s vertices, computing the "distance" to the next vertex. The direction in which I check the
     # structure is determined by `dir`.
     ans=true
 
@@ -165,7 +165,6 @@ function validConf(N,ind,edo,HPlist,dir)
 
 
 
-
     elseif dir == forwards
         if ind != length(HPlist)
             for j in ind:length(HPlist)-1
@@ -203,11 +202,9 @@ function validConf(N,ind,edo,HPlist,dir)
         end
     end
 
-    
-return ans
+    return ans
 end
             
-
 
 
 
@@ -356,24 +353,23 @@ end
 
 
 
-
 """
     validConfEnd2D(red,ind,inds,edo,HPlist)
 
 Given a 2D array `red`, a position `ind`, a couple of indices `inds`, a matrix encoding the aminoacids positions `edo`,
- and an array containing the sequence of H,P aminoacids `HPlist`; checks whether the position `inds` for the selected amino acid
- is valid. The necessary condition is for the end amino acid not to be adjacent to the chain.
+and an array containing the sequence of H,P aminoacids `HPlist`; checks whether the position `inds` for the selected amino acid
+is valid. The necessary condition is for the end amino acid not to be adjacent to the chain.
 """
 function validConfEnd2D(red,ind,inds,edo,HPlist)
-    
     x,y=inds
     x,y=periodicInd2D(red,[x,y])
 
-    # `ind` can only be `1` or `length(HPlist)`, meaning this function only checks for the validity of a configuration for the ends of the chain.
+    # `ind` can only be `1` or `length(HPlist)`, meaning this function only checks for the validity of a configuration 
+    # at the ends of the chain.
 
     value = true
     if ind == 1
-        for k in 3:length(HPlist) # Iterate over the mebers of the chain not directly linked to `ind`.
+        for k in 3:length(HPlist) # Iterate over the elements of the chain not directly linked to `ind`.
             xk,yk=edo[k,:]
             xk,yk=periodicInd2D(red,[xk,yk])
             dist=distance2D(red,[x,y],[xk,yk])[1]
@@ -413,7 +409,12 @@ end
 
 
 
-
+@enum Neighbors::Int8 begin # Define nearest neighbors as enum type.
+        up=1
+        right=2
+        down=3
+        left=4
+    end
 """
     countFirst2D(N,edo,HPlist)
 
@@ -427,18 +428,12 @@ function countFirst2D(N,edo,HPlist)
     ind=1
     xplus,yplus=edo[ind+1,:]
     x,y=edo[ind,:]
-    dx,dy=distance2D(red,[xplus,yplus],[x,y])[2:3]
+    dx=x-xplus
+    dy=y-yplus
     rel1= dx > 0 && dy == 0
     rel2= dx == 0 && dy < 0
     rel3= dx < 0 && dy == 0
     rel4= dx == 0 && dy > 0 # Conditions single out possible adjacent spaces to move the second amino acid to.
-
-    @enum Neighbors::Int8 begin # Define nearest neighbors as enum type.
-        up=1
-        right=2
-        down=3
-        left=4
-    end
 
     vs=makecross2D(red,[x,y]) # These are the nearest neighbors to `ind`.
     vscoords=[[x-1,y],[x,y+1],[x+1,y],[x,y-1]]
@@ -543,23 +538,15 @@ function countFirst2D(N,edo,HPlist)
             end
 
     end
-    # I now have two arrays with the information of where it is possible to move the first amino acids. First, I convert the numbers or enum types to coordinates.
-    # Then, making use of `validConfEnd2D` I make sure that the end amino acid `ind` doesn´t end up in the vicinity of another 
-    # amino acid besides `ind+1`.
+    # I now have two arrays with the information of where it is possible to move the first amino acids. First, I convert 
+    # the numbers or enum types to coordinates. Then, making use of `validConfEnd2D` I make sure that the end amino acid 
+    # `ind` doesn´t end up in the vicinity of another amino acid besides `ind+1`.
 
     coordinates1=[]
     coordinates2=[]
 
     for el in indices1
-        if el == 1
-            push!(coordinates1,vscoords[el])
-        elseif el == 2
-            push!(coordinates1,vscoords[el])
-        elseif el == 3
-            push!(coordinates1,vscoords[el])
-        elseif el == 4
-            push!(coordinates1,vscoords[el])
-        end
+        push!(coordinates1,vscoords[el])
     end
 
     for k in 1:length(indices2)
@@ -577,19 +564,19 @@ function countFirst2D(N,edo,HPlist)
     end
 
     # Now I have the coordinates for `ind` and `ind+1`. I proceed to check wheter the new configuration would be valid.
-
+    deleteinds=Int8[]
     for k in 1:length(indices1)
         xa,ya=coordinates2[k] # Possible new coordinates for the first amino acid.
-
         if validConfEnd2D(red,1,[xa,ya],edo,HPlist) != true
-            deleteat!(coordinates1,k)
-            deleteat!(coordinates2,k) # Delete possible coordinates that don´t satisfy the condition.
+            push!(deleteinds,k) # Store the indices that don´t satisfy the condition.
         end
     end
+    deleteat!(coordinates1,deleteinds)
+    deleteat!(coordinates2,deleteinds) # Delete possible coordinates.
 
     numpull=length(coordinates1)
     # Now we have the possible coordinates for the first two monomers, as well as the number of possible pull moves for the first 
-    # amino acid. Fo easier use, i turn the arrays `coordinates1,coordinates2` into a `numpull×2` matrices.
+    # amino acid. Fo easier use, I turn the arrays `coordinates1,coordinates2` into a `numpull×2` matrices.
 
     coordinates1=transpose(hcat(coordinates1...))
     coordinates2=transpose(hcat(coordinates2...))
@@ -633,18 +620,12 @@ function countLast2D(N,edo,HPlist)
     ind=length(HPlist)
     xminus,yminus=edo[ind-1,:]
     x,y=edo[ind,:]
-    dx,dy=distance2D(red,[xminus,yminus],[x,y])[2:3]
+    dx=x-xminus
+    dy=y-yminus
     rel1= dx > 0 && dy == 0
     rel2= dx == 0 && dy < 0
     rel3= dx < 0 && dy == 0
     rel4= dx == 0 && dy > 0 # Conditions single out possible adjacent spaces to move the second to last amnino acid to.
-
-    @enum Neighbors::Int8 begin # Define nearest neighbors as enum type.
-        up=1
-        right=2
-        down=3
-        left=4
-    end
 
     vs=makecross2D(red,[x,y]) # These are the nearest neighbors to `ind`.
     vscoords=[[x-1,y],[x,y+1],[x+1,y],[x,y-1]]
@@ -757,15 +738,7 @@ function countLast2D(N,edo,HPlist)
     coordinates2=[]
 
     for el in indices1
-        if el == 1
-            push!(coordinates1,vscoords[el])
-        elseif el == 2
-            push!(coordinates1,vscoords[el])
-        elseif el == 3
-            push!(coordinates1,vscoords[el])
-        elseif el == 4
-            push!(coordinates1,vscoords[el])
-        end
+        push!(coordinates1,vscoords[el])
     end
 
     for k in 1:length(indices2)
@@ -782,20 +755,20 @@ function countLast2D(N,edo,HPlist)
         end
     end
 
-    # Now I have the coordinates for `ind` and `ind-1`. I proceed to check wheter the new configuration would be valid.
-
+    # Now I have the coordinates for `ind` and `ind-1`. I proceed to check whether the new configuration would be valid.
+    deleteinds=Int8[]
     for k in 1:length(indices1)
-        xa,ya=coordinates2[k] # Possible new coordinates for the first amino acid.
-
+        xa,ya=coordinates2[k] # Possible new coordinates for the last amino acid.
         if validConfEnd2D(red,length(HPlist),[xa,ya],edo,HPlist) != true
-            deleteat!(coordinates1,k)
-            deleteat!(coordinates2,k) # Delete possible coordinates, they don´t satisfy the condition.
+            push!(deleteinds,k) # STore the indices that don´t satisfy the condition.
         end
     end
+    deleteat!(coordinates1,deleteinds)
+    deleteat!(coordinates2,deleteinds) # Delete possible coordinates.
 
     numpull=length(coordinates1)
     # Now we have the possible coordinates for the last two monomers, as well as the number of possible pull moves for the last 
-    # amino acid. Fo easier use, i turn the arrays `coordinates1,coordinates2` into a `numpull×2` matrices.
+    # amino acid. Fo easier use, I turn the arrays `coordinates1,coordinates2` into a `numpull×2` matrices.
 
     coordinates1=transpose(hcat(coordinates1...))
     coordinates2=transpose(hcat(coordinates2...))
@@ -1049,14 +1022,13 @@ function countMiddle2D(N,ind,edo,HPlist)
     end
 
 
-
     # Now I have in `coordinates1,coordinates2` the potential new positions for `ind,ind-1`. The length of these arrays is 
     # the number of possible pull moves por the given index.
     numpull1=length(coordinates1)
 
     # Now I have in `coordinatesi,coordinatesii` the potential new positions for `ind,ind+1`. The length of these arrays is 
     # the number of possible pull moves por the given index.
-    numpull2=length(coordinates1)
+    numpull2=length(coordinatesi)
     numpull=numpull1+numpull2
 
     # I turn the 1 dimensional arrays into matrices for easier use.
@@ -1100,8 +1072,8 @@ end
     countpull2D(N,edo,HPlist)
 
 Given a 2D array size `N`, a matrix encoding the aminoacids positions `edo`, and an array containing 
-the sequence of H,P aminoacids `HPlist`; pcounts all of the possible pull moves. It also outputs the necessary
-coordinates to perform one of the cpunted moves. 
+the sequence of H,P aminoacids `HPlist`; counts all of the possible pull moves. It also outputs the necessary
+coordinates to perform one of the listed moves. 
 """
 function countpull2D(N,edo,HPlist)
 
@@ -1113,6 +1085,9 @@ function countpull2D(N,edo,HPlist)
 
     # Count the moves and store the coordinates for the middle amino acids. 
     t3=0
+    tmid=0
+    npullpindexb=ones(Int8,length(HPlist)-2) # Stores the number of backwards pull moves for each middle index.
+    npullpindexf=ones(Int8,length(HPlist)-2) # Stores the number of forwards pull moves for each middle index.
     middlecoords1=[] # Contains the coordinates for `ind`, where `ind` is an index from the middle of the chain.
     middlecoords2=[] # Contains the coordinates for `ind-1`.
     middlecoords3=[] # Contains the coordinates for `ind`.
@@ -1124,13 +1099,68 @@ function countpull2D(N,edo,HPlist)
         push!(middlecoords3,coords7)
         push!(middlecoords4,coords8)
         t3=t3+tj
+        tmid=tmid+length(coords5[:,1])
+        npullpindexb[j-1]=length(coords5[:,1])
+        npullpindexf[j-1]=length(coords7[:,1])
     end
 
+    totalpull=t1+t2+t3
 
-    # Compute the total number of possible pull moves.
-    totalpm=t1+t2+t3
+    return (totalpull,tmid,npullpindexb,npullpindexf,coords1,coords2,coords3,coords4,middlecoords1,middlecoords2,middlecoords3,middlecoords4)
+end
 
-    return(totalpm,coords1,coords2,coords3,coords4,middlecoords1,middlecoords2,middlecoords3,middlecoords4)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Before writing the function that performs the actual move, I need a function which returns the index being pullled
+# in one of the `middlecoords`matrices from my function `countpull2D`.
+"""
+    middleInd2D(mp,npullpindex)
+
+Given a number `mp`, and an array `npullpindex` containing the number of pull moves for each of the middle indices;
+returns the corresponding index `ind` being moved and the position in one of my `middlecoords[ind][position,:]` matrices.
+"""
+function middleInd2D(mp,npullpindex)
+    l=length(npullpindex)
+    nb=ones(Int8,l)
+    nb[1]=npullpindex[1]
+    for i in 2:l
+        nb[i]=npullpindex[i]+nb[i-1]
+    end
+    ind=0
+    pos=0
+    for i in 1:l
+        if mp ≤ nb[i]
+            ind=i
+            break
+        end
+    end
+
+    if mp ≤ nb[1]
+        pos=mp
+    else
+        for i in 2:l
+            if mp ≤ nb[i]
+                pos=mp-nb[i-1]
+            end
+        end
+    end
+    
+    return (ind,pos)
 end
 
 
@@ -1152,24 +1182,15 @@ end
 
 
 
-
-
-
-
-
-
-
-
-
-# Now that I have the necessary function to count the number of pull moves and the coordinates of such moves, I write a function to actually
-# perform the moves.
+# Now that I have the necessary function to count the number of pull moves and the coordinates of such moves, 
+# I write a function to actually perform the moves.
 """
-    pullMove2D(N,ind,edo,HPlist)
+    pullMove2D(N,edo,HPlist)
 
-Given a 2D array size `N`, an index `ind`, a matrix encoding the aminoacids positions `edo`, and an array containing 
-the sequence of H,P aminoacids `HPlist`; performs a full pull move for the given index. 
+Given a 2D array size `N`, a matrix encoding the aminoacids positions `edo`, and an array containing 
+the sequence of H,P aminoacids `HPlist`; chooses an index and performs a full pull move for the generated index. 
 """
-function pullMove2D(N,ind,edo,HPlist)
+function pullMove2D(N,edo,HPlist)
     
     # I set up the protein within the array.
     red=makeLattice(N,edo,HPlist)
@@ -1178,17 +1199,27 @@ function pullMove2D(N,ind,edo,HPlist)
     # `newedo` will contain the amino acids´ final positions.
     newedo=copy(edo)
 
+    # Generate the list of possible pull moves.
+    totalpull,tmid,npullpindexb,npullpindexf,coords1,coords2,coords3,coords4,middlecoords1,middlecoords2,middlecoords3,middlecoords4=countpull2D(N,edo,HPlist)
 
+    # Randomly choose one of the pull moves.
+    m=rand(1:totalpull)
 
+    # MAke subdivisions according to the type of move.
+    s1=length(coords1[:,1])
+    s2=s1+1
+    s3=s1+length(coords3[:,1])
+    s4=s3+1
+    s5=s3+tmid
+    s6=s5+1
 
-    # Type of pull move depends on the value of `ind`.
-    if ind == 1
-        numpull,coordinates1,coordinates2=countFirst2D(N,edo,HPlist)
-        # For the time being, I wil choose the first possible pull move.
-        singleMove2D(red,edo[ind,:],coordinates2[1,:]) # Move `ind`.
-        newedo[ind,:]=coordinates2[1,:] # Record the change.
-        singleMove2D(red,edo[ind+1,:],coordinates1[1,:]) # Makes the move.
-        newedo[ind+1,:]=coordinates1[1,:] # Record the change.
+    # Type of pull move depends on the value of `m`.
+    if m ≤ s1
+        ind=1
+        singleMove2D(red,edo[ind,:],coords1[m,:]) # Move `ind`.
+        newedo[ind,:]=coords1[m,:] # Record the change.
+        singleMove2D(red,edo[ind+1,:],coords2[m,:]) # Makes the move.
+        newedo[ind+1,:]=coords2[m,:] # Record the change.
 
         # Now I have to check whether the current configuration is valid.
         stateconf=validConf(N,ind+1,newedo,HPlist,forwards) 
@@ -1205,17 +1236,13 @@ function pullMove2D(N,ind,edo,HPlist)
         end
 
 
-
-
-
-
-    elseif ind == length(HPlist)
-        numpull,coordinates1,coordinates2=countLast2D(N,edo,HPlist)
-        # For the time being, I wil choose the first possible pull move.
-        singleMove2D(red,edo[ind,:],coordinates2[1,:]) # Move `ind`.
-        newedo[ind,:]=coordinates2[1,:] # Record the change.
-        singleMove2D(red,edo[ind-1,:],coordinates1[1,:]) # Makes the move.
-        newedo[ind-1,:]=coordinates1[1,:] # Record the change.
+    elseif  s2 ≤ m ≤ s3
+        mp=m-(s2-1)
+        ind=length(HPlist)
+        singleMove2D(red,edo[ind,:],coords3[mp,:]) # Move `ind`.
+        newedo[ind,:]=coords3[mp,:] # Record the change.
+        singleMove2D(red,edo[ind-1,:],coords4[mp,:]) # Makes the move.
+        newedo[ind-1,:]=coords4[mp,:] # Record the change.
 
         # Now I have to check whether the current configuration is valid.
         stateconf=validConf(N,ind-1,newedo,HPlist,backwards) 
@@ -1232,21 +1259,15 @@ function pullMove2D(N,ind,edo,HPlist)
         end
 
 
-
-
-
-
-    else
-        numpull,coordinates1,coordinates2=countMiddle2D(N,ind,edo,HPlist)
-        # For the time being, I wil choose the first possible pull move.
-        singleMove2D(red,edo[ind,:],coordinates1[1,:]) # Move `ind`.
-        newedo[ind,:]=coordinates1[1,:] # Record the change.
+    elseif s4 ≤ m ≤ s5
+        mp=m-(s4-1)
+        ind,pos=middleInd2D(mp,npullpindexb)
+        singleMove2D(red,edo[ind,:],middlecoords1[ind][pos,:])
+        newedo[ind,:]=middlecoords1[ind][pos,:] 
         
-        # Now I have in `coordinates2` the potential new position for `ind-1`. If the current configuration is valid, I don´t make the move
-        # and the full pull move has been succesfully completed.
         if validConf(N,ind,newedo,HPlist,backwards) != true
-            singleMove2D(red,edo[ind-1,:],coordinates2[1,:]) # Makes the move.
-            newedo[ind-1,:]=coordinates2[1,:] # Record the change.
+            singleMove2D(red,edo[ind-1,:],middlecoords2[ind][pos,:]) # Makes the move.
+            newedo[ind-1,:]=middlecoords2[ind][pos,:] # Record the change.
         end
 
         # If all went well, a move has been done, now I have to check whether the current configuration is valid.
@@ -1263,9 +1284,36 @@ function pullMove2D(N,ind,edo,HPlist)
             end
         end
 
+
+    elseif m ≥ s6 
+        mp=m-(s6-1)
+        ind,pos=middleInd2D(mp,npullpindexf)
+        singleMove2D(red,edo[ind,:],middlecoords3[ind][pos,:])
+        newedo[ind,:]=middlecoords3[ind][pos,:] 
+        
+        if validConf(N,ind,newedo,HPlist,forwards) != true
+            singleMove2D(red,edo[ind+1,:],middlecoords4[ind][pos,:]) # Makes the move.
+            newedo[ind+1,:]=middlecoords4[ind][pos,:] # Record the change.
+        end
+
+        # If all went well, a move has been done, now I have to check whether the current configuration is valid.
+        stateconf=validConf(N,ind+1,newedo,HPlist,forwards) 
+        for k in ind:length(HPlist)-2
+            if stateconf == false
+                op=edo[k+2,:] # Old position.
+                np=edo[k,:] # New position.
+                singleMove2D(red,op,np) 
+                newedo[k+2,:]=np 
+                stateconf=validConf(N,k+2,newedo,HPlist,forwards) # Check whether the new configuration is valid.
+            else
+                break
+            end
+        end
+
+
     end
 
-    return (red,newedo) # Returns everything neccesary to reproduce the final configuration.
+    return (red,newedo,totalpull) # Returns everything neccesary to reproduce the final configuration.
 end
 
 

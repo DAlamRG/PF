@@ -50,10 +50,7 @@ end
 
 
 
-
-
-
-# Next, I define  a function which takes the configuration of the protein within a 2×2 array and outputs its energy.
+# Next, I define  a function which takes the configuration of the protein within a 2Darray and outputs its energy.
 """
     energy(N,edo,HPlist)
 
@@ -113,15 +110,13 @@ end
 
 
 
-
-
 # Now that I am able to generate a new state by performing a pull move, and knowing how to compute the energy of any
 # given configuration, I proceed to implement a simulation using the Metropolis-Hastings algorithm.
 
 """
-    energy(N,ns,T,edo,HPlist)
+    HP2Dmet(N,ns,T,edo,HPlist) 
 
-Given a 2D array size `N`, a number of visited states `ns`, the temperature T, a matrix encoding the aminoacids positions `edo`, 
+Given a 2D array size `N`, a number of steps `ns`, the temperature T, a matrix encoding the aminoacids positions `edo`, 
 and an array containing the sequence of H,P aminoacids `HPlist`; returns the final configuration after performing a simulation 
 using the Metropolis-Hastings algorithm.
 """
@@ -132,27 +127,22 @@ function HP2Dmet(N,ns,T,edo,HPlist)
     
     redarray=ones(Int8,(N,N,ns+1)) # Multidimensional array whose entries `redarray[:,:,j]` are the matrices`red` at a time t=j.
     redarray[:,:,1]=red # The first array is filled by the input state.
-    difes=zeros(Float64,s) # Stores the energy difference ΔH between states.
-    enstates=zeros(Float64,s+1) # Stores the energy of each state visited during the simulation.
+    difes=zeros(Float64,ns) # Stores the energy difference ΔH between states.
+    enstates=zeros(Float64,ns+1) # Stores the energy of each state visited during the simulation.
     
     # Compute the energy of the initial state and store it.
-    enestados[1]=energy(N,edoinicial,HPlist)
+    enestados[1]=energy(N,edo,HPlist)
 
 
 
-    
+
     # Now, apply Metropolis.
-    #Primero calculo las diferencias de energías posibles y sus exponenciales (tasas de aceptación).
-    as=Float64[exp(-4*β),exp(-8*β)]
     
     #Generate new states by performing pull moves.
     for l in 1:ns 
 
-        # Generate a random index.
-        ind=rand(1:length(HPlist))
-
         # Generate a new state.
-        newred,newedo = pullMove2D(N,ind,edo,HPlist)
+        newred,newedo,totalpull = pullMove2D(N,edo,HPlist)
         newenergy=energy(N,newedo,HPlist) # Compute the energy after the pull move.
         
         ΔH=newenergy-enstates[l]
@@ -189,31 +179,7 @@ function HP2Dmet(N,ns,T,edo,HPlist)
         redarray[:,:,l+1]=red[:,:]
     end
     
-    # Ahora, para calcular la energía interna y magnetización a la temperatura dada, tomamos la "segunda mitad" de estados y empleamos el estimador (un promedio)
-    # para obtener un valor. También calculo la capacidad calorífica por spin y susceptibilidad magnética por spin.
-    
-    t=Int(floor(s/2)) # t será el tiempo a partir del cual haremos las "mediciones". Divide el número de estados aproximadamente a la mitad.
-    et=enestados[t:end]
-    mt=magestados[t:end] # Consideramos sólamente los valores que nos interesan
-    # Ahora sí calculamos la energía y magnetización a ésta temperatura
-    U=sum(et)/(length(et))
-    M=sum(mt)/(length(mt))
-    # Nos interesa más la energía interna y magnetización por spin. Las calculo.
-    u=U/(N^2)
-    m=M/(N^2)
-    # Ahora, calculo la capacidad y la susceptibilidad
-    et2=Float64[j^2 for j in et] # Éste arreglo me va a servir para calcular <E^2>
-    mt2=Float64[j^2 for j in mt] # Éste arreglo me va a servir para calcular <M^2>
-    U2=sum(et2)/(length(et2))
-    M2=sum(mt2)/(length(mt2))
-    
-    c=((β^2)/(N^2))*(U2-U^2)
-    χ=((β)/(N^2))*(M2-M^2)
-    
-    
-    # Regreso la matriz con los spines finales, la energía de cada estado, la magnetización de cada estado, 
-    # y la energía interna/magnetización/capacidad/susceptibilidad por spin
-    return (redarray,enestados,magestados,u,m,c,χ)
+    return (redarray,enestados)
 end
 
 

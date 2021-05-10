@@ -387,6 +387,7 @@ function validConfEnd2D(red,ind,inds,edo,HPlist)
                 value=false
                 break
             end
+        end
 
     end
     return value
@@ -444,7 +445,7 @@ function countFirst2D(N,edo,HPlist)
     crossv4=makecross2D(red,[x,y-1]) # Nearest neighbors of the nearest neighbors.
 
     indices1=Int8[] # Here I will store the coordinates for `ind+1`.
-    indices2=Int8[] # Here I store the possible coordinates for `ind`.
+    indices2=Neighbors[] # Here I store the possible coordinates for `ind`.
     if rel1 
         if vs[2] == 0 # `ind+1` might move into `vs[2]`.
             for k in [right,down]
@@ -467,7 +468,7 @@ function countFirst2D(N,edo,HPlist)
                     push!(indices2,k)
                 end
             end
-
+        end
     elseif rel2 
         if vs[1] == 0 
             for k in [up,left]
@@ -490,7 +491,7 @@ function countFirst2D(N,edo,HPlist)
                     push!(indices2,k)
                 end
             end
-
+        end
     elseif rel3
         if vs[1] == 0 
             for k in [up,right,left]
@@ -513,7 +514,7 @@ function countFirst2D(N,edo,HPlist)
                     push!(indices2,k)
                 end
             end
- 
+        end
     elseif rel4 
         if vs[1] == 0 
             for k in [up,right]
@@ -536,7 +537,7 @@ function countFirst2D(N,edo,HPlist)
                     push!(indices2,k)
                 end
             end
-
+        end
     end
     # I now have two arrays with the information of where it is possible to move the first amino acids. First, I convert 
     # the numbers or enum types to coordinates. Then, making use of `validConfEnd2D` I make sure that the end amino acid 
@@ -636,7 +637,7 @@ function countLast2D(N,edo,HPlist)
     crossv4=makecross2D(red,[x,y-1]) # Nearest neighbors of the nearest neighbors.
 
     indices1=Int8[] # Here I will store the coordinates for `ind-1`.
-    indices2=Int8[] # Here I store the possible coordinates for `ind`.
+    indices2=Neighbors[] # Here I store the possible coordinates for `ind`.
     if rel1 
         if vs[2] == 0 # `ind+1` might move into `vs[2]`.
             for k in [right,down]
@@ -659,7 +660,7 @@ function countLast2D(N,edo,HPlist)
                     push!(indices2,k)
                 end
             end
-
+        end
     elseif rel2 
         if vs[1] == 0 
             for k in [up,left]
@@ -682,7 +683,7 @@ function countLast2D(N,edo,HPlist)
                     push!(indices2,k)
                 end
             end
-
+        end
     elseif rel3
         if vs[1] == 0 
             for k in [up,right,left]
@@ -705,7 +706,7 @@ function countLast2D(N,edo,HPlist)
                     push!(indices2,k)
                 end
             end
- 
+        end
     elseif rel4 
         if vs[1] == 0 
             for k in [up,right]
@@ -728,7 +729,7 @@ function countLast2D(N,edo,HPlist)
                     push!(indices2,k)
                 end
             end
-
+        end
     end
     # I now have two arrays with the information of where it is possible to move the last amino acids. First, I convert the numbers 
     # or enum types to coordinates. Then, making use of `validConfEnd2D` I make sure that the end amino acid `ind` doesn´t 

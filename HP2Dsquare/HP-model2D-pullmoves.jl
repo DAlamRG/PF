@@ -454,14 +454,16 @@ function countFirst2D(N,edo,HPlist)
                     push!(indices2,k)
                 end
             end
-        elseif vs[3] == 0
+        end
+        if vs[3] == 0
             for k in [right,down,left]
                 if crossv3[Int(k)] == 0
                     push!(indices1,3)
                     push!(indices2,k)
                 end
             end
-        elseif vs[4] == 0
+        end
+        if vs[4] == 0
             for k in [down,left]
                 if crossv4[Int(k)] == 0
                     push!(indices1,4)
@@ -477,14 +479,16 @@ function countFirst2D(N,edo,HPlist)
                     push!(indices2,k)
                 end
             end
-        elseif vs[3] == 0
+        end
+        if vs[3] == 0
             for k in [down,left]
                 if crossv3[Int(k)] == 0
                     push!(indices1,3)
                     push!(indices2,k)
                 end
             end
-        elseif vs[4] == 0
+        end
+        if vs[4] == 0
             for k in [up,down,left]
                 if crossv4[Int(k)] == 0
                     push!(indices1,4)
@@ -500,14 +504,16 @@ function countFirst2D(N,edo,HPlist)
                     push!(indices2,k)
                 end
             end
-        elseif vs[2] == 0
+        end
+        if vs[2] == 0
             for k in [up,right]
                 if crossv2[Int(k)] == 0
                     push!(indices1,2)
                     push!(indices2,k)
                 end
             end
-        elseif vs[4] == 0
+        end
+        if vs[4] == 0
             for k in [up,left]
                 if crossv4[Int(k)] == 0
                     push!(indices1,4)
@@ -523,14 +529,16 @@ function countFirst2D(N,edo,HPlist)
                     push!(indices2,k)
                 end
             end
-        elseif vs[2] == 0
+        end
+        if vs[2] == 0
             for k in [up,right,down]
                 if crossv2[Int(k)] == 0
                     push!(indices1,2)
                     push!(indices2,k)
                 end
             end
-        elseif vs[3] == 0
+        end
+        if vs[3] == 0
             for k in [right,down]
                 if crossv3[Int(k)] == 0
                     push!(indices1,3)
@@ -646,14 +654,16 @@ function countLast2D(N,edo,HPlist)
                     push!(indices2,k)
                 end
             end
-        elseif vs[3] == 0
+        end
+        if vs[3] == 0
             for k in [right,down,left]
                 if crossv3[Int(k)] == 0
                     push!(indices1,3)
                     push!(indices2,k)
                 end
             end
-        elseif vs[4] == 0
+        end
+        if vs[4] == 0
             for k in [down,left]
                 if crossv4[Int(k)] == 0
                     push!(indices1,4)
@@ -669,14 +679,16 @@ function countLast2D(N,edo,HPlist)
                     push!(indices2,k)
                 end
             end
-        elseif vs[3] == 0
+        end
+        if vs[3] == 0
             for k in [down,left]
                 if crossv3[Int(k)] == 0
                     push!(indices1,3)
                     push!(indices2,k)
                 end
             end
-        elseif vs[4] == 0
+        end
+        if vs[4] == 0
             for k in [up,down,left]
                 if crossv4[Int(k)] == 0
                     push!(indices1,4)
@@ -692,14 +704,16 @@ function countLast2D(N,edo,HPlist)
                     push!(indices2,k)
                 end
             end
-        elseif vs[2] == 0
+        end
+        if vs[2] == 0
             for k in [up,right]
                 if crossv2[Int(k)] == 0
                     push!(indices1,2)
                     push!(indices2,k)
                 end
             end
-        elseif vs[4] == 0
+        end
+        if vs[4] == 0
             for k in [up,left]
                 if crossv4[Int(k)] == 0
                     push!(indices1,4)
@@ -715,14 +729,16 @@ function countLast2D(N,edo,HPlist)
                     push!(indices2,k)
                 end
             end
-        elseif vs[2] == 0
+        end
+        if vs[2] == 0
             for k in [up,right,down]
                 if crossv2[Int(k)] == 0
                     push!(indices1,2)
                     push!(indices2,k)
                 end
             end
-        elseif vs[3] == 0
+        end
+        if vs[3] == 0
             for k in [right,down]
                 if crossv3[Int(k)] == 0
                     push!(indices1,3)
@@ -761,7 +777,7 @@ function countLast2D(N,edo,HPlist)
     for k in 1:length(indices1)
         xa,ya=coordinates2[k] # Possible new coordinates for the last amino acid.
         if validConfEnd2D(red,length(HPlist),[xa,ya],edo,HPlist) != true
-            push!(deleteinds,k) # STore the indices that don´t satisfy the condition.
+            push!(deleteinds,k) # Store the indices that don´t satisfy the condition.
         end
     end
     deleteat!(coordinates1,deleteinds)
@@ -1084,6 +1100,7 @@ function countpull2D(N,edo,HPlist)
     # Count the moves and store the coordinates for the last monomer.
     t2,coords4,coords3=countLast2D(N,edo,HPlist)
 
+    
     # Count the moves and store the coordinates for the middle amino acids. 
     t3=0
     tmid=0
@@ -1100,9 +1117,9 @@ function countpull2D(N,edo,HPlist)
         push!(middlecoords3,coords7)
         push!(middlecoords4,coords8)
         t3=t3+tj
-        tmid=tmid+length(coords5[:,1])
-        npullpindexb[j-1]=length(coords5[:,1])
-        npullpindexf[j-1]=length(coords7[:,1])
+        tmid=tmid+size(coords5)[1]
+        npullpindexb[j-1]=size(coords5)[1]
+        npullpindexf[j-1]=size(coords5)[1]
     end
 
     totalpull=t1+t2+t3

@@ -264,7 +264,7 @@ end
 
 
 """
-    function makecross2D(red,inds)
+    makecross2D(red,inds)
 
 Given a 2D array `red`, and a couple of indices `inds`; returns the values of the nearest neighbors to the given position,
 in clockwise order. 
@@ -1101,30 +1101,47 @@ function countpull2D(N,edo,HPlist)
     t2,coords4,coords3=countLast2D(N,edo,HPlist)
 
     
+
+
     # Count the moves and store the coordinates for the middle amino acids. 
     t3=0
     tmid=0
-    npullpindexb=ones(Int8,length(HPlist)-2) # Stores the number of backwards pull moves for each middle index.
-    npullpindexf=ones(Int8,length(HPlist)-2) # Stores the number of forwards pull moves for each middle index.
+    indexb=Int8[] # Stores the value of the middle indices that have non empty arrays of possible backwards pull moves.
+    indexf=Int8[] # Stores the value of the middle indices that have non empty arrays of possible forwards pull moves.
+    npullpindexb=Int8[] # Stores the number of backwards pull moves for each middle index.
+    # Length may be shorter than the number of middle indices given that I only store the coordinates for non empty arrays.
+    npullpindexf=Int8[] # Stores the number of forwards pull moves for each middle index.
     middlecoords1=[] # Contains the coordinates for `ind`, where `ind` is an index from the middle of the chain.
     middlecoords2=[] # Contains the coordinates for `ind-1`.
     middlecoords3=[] # Contains the coordinates for `ind`.
     middlecoords4=[] # Contains the coordinates for `ind+1`.
     for j in 2:length(HPlist)-1
         tj,coords5,coords6,coords7,coords8=countMiddle2D(N,j,edo,HPlist)
-        push!(middlecoords1,coords5)
-        push!(middlecoords2,coords6)
-        push!(middlecoords3,coords7)
-        push!(middlecoords4,coords8)
+        # I have all the neccesary information. But first I need to check if the given index
+        # posseses at least a possible pull move.
         t3=t3+tj
-        tmid=tmid+size(coords5)[1]
-        npullpindexb[j-1]=size(coords5)[1]
-        npullpindexf[j-1]=size(coords5)[1]
+        if isempty(coords5) == false
+            tmid=tmid+size(coords5)[1]
+            push!(indexb,j)
+            push!(npullpindexb,size(coords5)[1])
+            push!(middlecoords1,coords5)
+            push!(middlecoords2,coords6)
+        end
+
+        if isempty(coords7) == false
+            push!(indexf,j)
+            push!(npullpindexf,size(coords7)[1])
+            push!(middlecoords3,coords7)
+            push!(middlecoords4,coords8)
+        end
     end
 
     totalpull=t1+t2+t3
 
-    return (totalpull,tmid,npullpindexb,npullpindexf,coords1,coords2,coords3,coords4,middlecoords1,middlecoords2,middlecoords3,middlecoords4)
+    matrixb=hcat(indexb,npullpindexb)
+    matrixf=hcat(indexf,npullpindexf)
+
+    return (totalpull,tmid,matrixb,matrixf,coords1,coords2,coords3,coords4,middlecoords1,middlecoords2,middlecoords3,middlecoords4)
 end
 
 
@@ -1147,22 +1164,28 @@ end
 # Before writing the function that performs the actual move, I need a function which returns the index being pullled
 # in one of the `middlecoords`matrices from my function `countpull2D`.
 """
-    middleInd2D(mp,npullpindex)
+    middleInd2D(mp,matrix)
 
-Given a number `mp`, and an array `npullpindex` containing the number of pull moves for each of the middle indices;
-returns the corresponding index `ind` being moved and the position in one of my `middlecoords[ind][position,:]` matrices.
+Given a number `mp`, and a matrix `matrx` containing the values of the middle indices with possible pull moves in 
+the first column and the number of pull moves for said indices in the second column;returns the corresponding 
+index `ind` being moved and the position in one of my `middlecoords[ind][position,:]` matrices.
 """
-function middleInd2D(mp,npullpindex)
+function middleInd2D(mp,matrix)
+    indexd=matrix[:,1] # This array contains the value of the indices with viable pull moves.
+    npullpindex=matrix[:,2] # This array contains the number of pull moves for each index in `indexd`.
     l=length(npullpindex)
-    nb=ones(Int8,l)
+    nb=ones(Int8,l) # `nb` will store the number of accumulated pull moves for each of the indices.
     nb[1]=npullpindex[1]
-    for i in 2:l
+    for i in 2:l # Fill `nb`.
         nb[i]=npullpindex[i]+nb[i-1]
     end
-    ind=0
-    pos=0
+
+    indm=0 # This is the index being pulled.
+    ind=0 # This is the index for the `middlecoords[ind][position,:]` matrices.
+    pos=0 # This is the position of the right coordinates.
     for i in 1:l
         if mp ≤ nb[i]
+            indm=indexd[i]
             ind=i
             break
         end
@@ -1178,7 +1201,7 @@ function middleInd2D(mp,npullpindex)
         end
     end
     
-    return (ind,pos)
+    return (indm,ind,pos)
 end
 
 
@@ -1218,18 +1241,23 @@ function pullMove2D(N,edo,HPlist)
     newedo=copy(edo)
 
     # Generate the list of possible pull moves.
-    totalpull,tmid,npullpindexb,npullpindexf,coords1,coords2,coords3,coords4,middlecoords1,middlecoords2,middlecoords3,middlecoords4=countpull2D(N,edo,HPlist)
+    totalpull,tmid,matrixb,matrixf,coords1,coords2,coords3,coords4,middlecoords1,middlecoords2,middlecoords3,middlecoords4=countpull2D(N,edo,HPlist)
 
     # Randomly choose one of the pull moves.
     m=rand(1:totalpull)
 
-    # MAke subdivisions according to the type of move.
-    s1=length(coords1[:,1])
+
+
+    # Make subdivisions according to the type of move.
+    s1=size(coords1)[1] 
     s2=s1+1
-    s3=s1+length(coords3[:,1])
+    s3=s1+(size(coords3)[1])
     s4=s3+1
     s5=s3+tmid
     s6=s5+1
+
+
+
 
     # Type of pull move depends on the value of `m`.
     if m ≤ s1
@@ -1279,54 +1307,66 @@ function pullMove2D(N,edo,HPlist)
 
     elseif s4 ≤ m ≤ s5
         mp=m-(s4-1)
-        ind,pos=middleInd2D(mp,npullpindexb)
-        singleMove2D(red,edo[ind,:],middlecoords1[ind][pos,:])
-        newedo[ind,:]=middlecoords1[ind][pos,:] 
+        indm,ind,pos=middleInd2D(mp,matrixb)
         
-        if validConf(N,ind,newedo,HPlist,backwards) != true
-            singleMove2D(red,edo[ind-1,:],middlecoords2[ind][pos,:]) # Makes the move.
-            newedo[ind-1,:]=middlecoords2[ind][pos,:] # Record the change.
+        singleMove2D(red,edo[indm,:],middlecoords1[ind][pos,:])
+        newedo[indm,:]=middlecoords1[ind][pos,:]
+
+        if validConf(N,indm,newedo,HPlist,backwards) != true
+            singleMove2D(red,edo[indm-1,:],middlecoords2[ind][pos,:]) # Makes the move.
+            newedo[indm-1,:]=middlecoords2[ind][pos,:] # Record the change.
         end
 
         # If all went well, a move has been done, now I have to check whether the current configuration is valid.
-        stateconf=validConf(N,ind-1,newedo,HPlist,backwards) 
-        for k in ind:-1:3
-            if stateconf == false
-                op=edo[k-2,:] # Old position.
-                np=edo[k,:] # New position.
-                singleMove2D(red,op,np) 
-                newedo[k-2,:]=np 
-                stateconf=validConf(N,k-2,newedo,HPlist,backwards) # Check whether the new configuration is valid.
-            else
-                break
+        stateconf=validConf(N,indm-1,newedo,HPlist,backwards)
+        if stateconf == false
+            for k in (indm-2):-1:1
+                if stateconf == false
+                    op=edo[k,:] # Old position.
+                    np=edo[k+2,:] # New position.
+                    singleMove2D(red,op,np) 
+                    newedo[k,:]=np 
+                    stateconf=validConf(N,k,newedo,HPlist,backwards) # Check whether the new configuration is valid.
+                else
+                    break
+                end
             end
         end
+        
+
+
 
 
     elseif m ≥ s6 
         mp=m-(s6-1)
-        ind,pos=middleInd2D(mp,npullpindexf)
-        singleMove2D(red,edo[ind,:],middlecoords3[ind][pos,:])
-        newedo[ind,:]=middlecoords3[ind][pos,:] 
-        
-        if validConf(N,ind,newedo,HPlist,forwards) != true
-            singleMove2D(red,edo[ind+1,:],middlecoords4[ind][pos,:]) # Makes the move.
-            newedo[ind+1,:]=middlecoords4[ind][pos,:] # Record the change.
+        indm,ind,pos=middleInd2D(mp,matrixf)
+
+        singleMove2D(red,edo[indm,:],middlecoords3[ind][pos,:])
+        newedo[indm,:]=middlecoords3[ind][pos,:]
+
+        if validConf(N,indm,newedo,HPlist,forwards) != true
+            singleMove2D(red,edo[indm+1,:],middlecoords4[ind][pos,:]) # Makes the move.
+            newedo[indm+1,:]=middlecoords4[ind][pos,:] # Record the change.
         end
 
         # If all went well, a move has been done, now I have to check whether the current configuration is valid.
-        stateconf=validConf(N,ind+1,newedo,HPlist,forwards) 
-        for k in ind:length(HPlist)-2
-            if stateconf == false
-                op=edo[k+2,:] # Old position.
-                np=edo[k,:] # New position.
-                singleMove2D(red,op,np) 
-                newedo[k+2,:]=np 
-                stateconf=validConf(N,k+2,newedo,HPlist,forwards) # Check whether the new configuration is valid.
-            else
-                break
+        stateconf=validConf(N,indm+1,newedo,HPlist,forwards)
+        if stateconf ==  false
+            for k in (indm+2):length(HPlist)
+                if stateconf == false
+                    op=edo[k,:] # Old position.
+                    np=edo[k-2,:] # New position.
+                    singleMove2D(red,op,np) 
+                    newedo[k,:]=np 
+                    stateconf=validConf(N,k,newedo,HPlist,forwards) # Check whether the new configuration is valid.
+                else
+                    break
+                end
             end
         end
+
+
+        
 
 
     end

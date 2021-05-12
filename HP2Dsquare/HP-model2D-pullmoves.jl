@@ -1181,8 +1181,10 @@ function middleInd2D(mp,matrix)
     end
 
     indm=0 # This is the index being pulled.
-    ind=0 # This is the index for the `middlecoords[ind][position,:]` matrices.
+    ind=0 # This is the index for the `middlecoords[ind][pos,:]` matrices.
     pos=0 # This is the position of the right coordinates.
+    
+    
     for i in 1:l
         if mp ≤ nb[i]
             indm=indexd[i]
@@ -1190,15 +1192,11 @@ function middleInd2D(mp,matrix)
             break
         end
     end
-
+    
     if mp ≤ nb[1]
         pos=mp
     else
-        for i in 2:l
-            if mp ≤ nb[i]
-                pos=mp-nb[i-1]
-            end
-        end
+        pos=mp-nb[ind-1]
     end
     
     return (indm,ind,pos)
@@ -1235,7 +1233,6 @@ function pullMove2D(N,edo,HPlist)
     
     # I set up the protein within the array.
     red=makeLattice(N,edo,HPlist)
-    display(red)
     
     # `newedo` will contain the amino acids´ final positions.
     newedo=copy(edo)
@@ -1247,20 +1244,29 @@ function pullMove2D(N,edo,HPlist)
     m=rand(1:totalpull)
 
 
-
     # Make subdivisions according to the type of move.
-    s1=size(coords1)[1] 
-    s2=s1+1
-    s3=s1+(size(coords3)[1])
+    if isempty(coords1)
+        s1=0
+    else
+        s1=size(coords1)[1] 
+    end
+
+    if isempty(coords3)
+        s2=0
+        s3=0
+    else
+        s2=s1+1
+        s3=s1+(size(coords3)[1])
+    end
+
     s4=s3+1
     s5=s3+tmid
     s6=s5+1
-
-
+    
 
 
     # Type of pull move depends on the value of `m`.
-    if m ≤ s1
+    if m ≤ s1 # First monomer is moved.
         ind=1
         singleMove2D(red,edo[ind,:],coords1[m,:]) # Move `ind`.
         newedo[ind,:]=coords1[m,:] # Record the change.
@@ -1268,7 +1274,7 @@ function pullMove2D(N,edo,HPlist)
         newedo[ind+1,:]=coords2[m,:] # Record the change.
 
         # Now I have to check whether the current configuration is valid.
-        stateconf=validConf(N,ind+1,newedo,HPlist,forwards) 
+        stateconf=validConf(N,ind+1,newedo,HPlist,forwards)
         for k in ind+2:length(HPlist)
             if stateconf == false
                 op=edo[k,:] # Old position.
@@ -1280,11 +1286,12 @@ function pullMove2D(N,edo,HPlist)
                 break
             end
         end
+        
 
 
     elseif  s2 ≤ m ≤ s3
-        mp=m-(s2-1)
-        ind=length(HPlist)
+        mp=m-(s2-1) # `mp is the position` for the moves corresponding to the final monomer in the chain.
+        println("ind=",ind)
         singleMove2D(red,edo[ind,:],coords3[mp,:]) # Move `ind`.
         newedo[ind,:]=coords3[mp,:] # Record the change.
         singleMove2D(red,edo[ind-1,:],coords4[mp,:]) # Makes the move.
@@ -1308,7 +1315,6 @@ function pullMove2D(N,edo,HPlist)
     elseif s4 ≤ m ≤ s5
         mp=m-(s4-1)
         indm,ind,pos=middleInd2D(mp,matrixb)
-        
         singleMove2D(red,edo[indm,:],middlecoords1[ind][pos,:])
         newedo[indm,:]=middlecoords1[ind][pos,:]
 
@@ -1335,12 +1341,9 @@ function pullMove2D(N,edo,HPlist)
         
 
 
-
-
     elseif m ≥ s6 
         mp=m-(s6-1)
         indm,ind,pos=middleInd2D(mp,matrixf)
-
         singleMove2D(red,edo[indm,:],middlecoords3[ind][pos,:])
         newedo[indm,:]=middlecoords3[ind][pos,:]
 
@@ -1349,7 +1352,7 @@ function pullMove2D(N,edo,HPlist)
             newedo[indm+1,:]=middlecoords4[ind][pos,:] # Record the change.
         end
 
-        # If all went well, a move has been done, now I have to check whether the current configuration is valid.
+        # If all went well, a move has been performed, now I have to check whether the current configuration is valid.
         stateconf=validConf(N,indm+1,newedo,HPlist,forwards)
         if stateconf ==  false
             for k in (indm+2):length(HPlist)
@@ -1366,12 +1369,13 @@ function pullMove2D(N,edo,HPlist)
         end
 
 
-        
-
 
     end
-
-    return (red,newedo,totalpull) # Returns everything neccesary to reproduce the final configuration.
+    
+    
+    newred=makeLattice(N,newedo,HPlist)
+    return (newred,newedo,totalpull) # Returns everything neccesary to reproduce the final configuration and implement
+    # the Metropolis algorithm.
 end
 
 

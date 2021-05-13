@@ -122,64 +122,79 @@ using the Metropolis-Hastings algorithm.
 """
 function HP2Dmet(N,ns,T,edo,HPlist) 
     
+
     β=1/T
     red=makeLattice(N,edo,HPlist)
     
     redarray=ones(Int8,(N,N,ns+1)) # Multidimensional array whose entries `redarray[:,:,j]` are the matrices`red` at a time t=j.
     redarray[:,:,1]=red # The first array is filled by the input state.
+
+    states=ones(Int8,(length(HPlist),2,ns+1)) # `states` stores the amino acids´ coordinates for each visited configuration.
+    states[:,:,1]=edo # First coordinates are those of the input state.
+    
     difes=zeros(Float64,ns) # Stores the energy difference ΔH between states.
     enstates=zeros(Float64,ns+1) # Stores the energy of each state visited during the simulation.
+    enstates[1]=energy(N,edo,HPlist) # Compute the energy of the initial state and store it.
     
-    # Compute the energy of the initial state and store it.
-    enestados[1]=energy(N,edo,HPlist)
+    npullstates=zeros(Float64,ns+1) # Stores the number of pull moves for each configuration.
+    npullstates[1]=countpull2D(N,edo,HPlist)[1] # Count the number of pull moves for the initial state and store it.
 
+    
+    
 
-
-
-    # Now, apply Metropolis.
+    # Now, apply Metropolis-Hastings.
     
     #Generate new states by performing pull moves.
-    for l in 1:ns 
+    for l in 2:ns+1 
 
         # Generate a new state.
-        newred,newedo,totalpull = pullMove2D(N,edo,HPlist)
+        newred,newedo,totalpull = pullMove2D(N,states[:,:,l-1],HPlist)
         newenergy=energy(N,newedo,HPlist) # Compute the energy after the pull move.
         
-        ΔH=newenergy-enstates[l]
-        difes[l]=ΔH
+        ΔH=newenergy-enstates[l-1] # Compute the energy difference.
+        
         
 
         if ΔH ≤ 0 # We accept the configuration change.
-            red=copy(newred)
-            edo=copy(newedo)
-            enstates[l+1]=newenergy # Write the new energy.
+            redarray[:,:,l]=newred
+            states[:,:,l]=newedo
+            enstates[l]=newenergy 
+            npullstates[l]=totalpull
+            difes[l-1]=ΔH
+
+
         else
             r=rand() # Random number, sampled from uniform distribution over [0,1].
             exponential=exp(-β*ΔH)
-            if difE == 4
-                if r < as[1] # Se voltea el spin con probabilidad dada por la exponencial
-                    red[kx,ky]=(-1)*red[kx,ky]
-                    enestados[l+1]=enestados[l]+(difE) 
-                    magestados[l+1]=magestados[l]+2*(red[kx,ky]) 
-                else
-                    enestados[l+1]=enestados[l] # No se voltea el spin y las cantidades permanecen iguales
-                    magestados[l+1]=magestados[l]
-                end
-            elseif difE == 8
-                if r < as[2] # Se voltea el spin con probabilidad dada por la exponencial
-                    red[kx,ky]=(-1)*red[kx,ky]
-                    enestados[l+1]=enestados[l]+(difE) 
-                    magestados[l+1]=magestados[l]+2*(red[kx,ky]) 
-                else
-                    enestados[l+1]=enestados[l] # No se voltea el spin y las cantidades permanecen iguales
-                    magestados[l+1]=magestados[l]
-                end
+            q=(npullstates[l-1])/(totalpull) # This is the quotient of number of pull moves.
+            pστ=q*exponential # This determines the probability of the move in the case ΔH > 0.
+
+            if r < pστ # Accept the move.
+                redarray[:,:,l]=newred
+                states[:,:,l]=newedo
+                enstates[l]=newenergy 
+                npullstates[l]=totalpull
+                difes[l-1]=ΔH
+            else # MOve is not accepted, the protein´s configuration stays the same.
+                redarray[:,:,l]=redarray[:,:,l-1]
+                states[:,:,l]=states[:,:,l-1]
+                enstates[l]=enstates[l-1]
+                npullstates[l]=npullstates[l-1]
+                difes[l-1]=0
             end
         end
-        redarray[:,:,l+1]=red[:,:]
     end
+
+
+    # After the above for loop has ended, I have the final configuration for the protein. I pass the configuration
+    # as the function´s output.
     
-    return (redarray,enestados)
+    return (redarray,states,enstates)
 end
 
+
+
+
+#[[20 10];[20 11];[20 12];[20 13];[20 14];[20 15];[20 16];[20 17];[20 18];[20 19];[20 20];[20 21];[20 22];[20 23];[20 24];[20 25];[20 26];[20 27];[20 28];[20 29]]
+#[-1,1,-1,1,1,-1,-1,1,-1,1,1,-1,1,-1,-1,1,1,-1,1,-1]
 

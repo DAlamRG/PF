@@ -154,7 +154,8 @@ function validConf(N,ind,edo,HPlist,dir)
                         ans=false
                         break
                     end
-                elseif dy > 1
+                end
+                if dy > 1
                     if ycond == false
                         ans=false
                         break
@@ -192,7 +193,8 @@ function validConf(N,ind,edo,HPlist,dir)
                         ans=false
                         break
                     end
-                elseif dy > 1
+                end
+                if dy > 1
                     if ycond == false
                         ans=false
                         break
@@ -352,7 +354,7 @@ end
 
 
 
-
+# I believe this function is not neccesary. I leave it here just in case it comes in handy later.
 """
     validConfEnd2D(red,ind,inds,edo,HPlist)
 
@@ -429,16 +431,16 @@ function countFirst2D(N,edo,HPlist)
     ind=1
     xplus,yplus=edo[ind+1,:]
     x,y=edo[ind,:]
-    dx=x-xplus
-    dy=y-yplus
-    rel1= dx > 0 && dy == 0
-    rel2= dx == 0 && dy < 0
-    rel3= dx < 0 && dy == 0
-    rel4= dx == 0 && dy > 0 # Conditions single out possible adjacent spaces to move the second amino acid to.
 
-    vs=makecross2D(red,[x,y]) # These are the nearest neighbors to `ind`.
-    vscoords=[[x-1,y],[x,y+1],[x+1,y],[x,y-1]]
+    rel1= periodicInd2D(red,[x-1,y]) == periodicInd2D(red,[xplus,yplus])
+    rel2= periodicInd2D(red,[x,y+1]) == periodicInd2D(red,[xplus,yplus])
+    rel3= periodicInd2D(red,[x+1,y]) == periodicInd2D(red,[xplus,yplus])
+    rel4= periodicInd2D(red,[x,y-1]) == periodicInd2D(red,[xplus,yplus]) # Conditions single out possible adjacent spaces to move the second amino acid to.
 
+    vs=makecross2D(red,[x,y]) # These are the values of the nearest neighbors to `ind`.
+    vscoords=[periodicInd2D(red,[x-1,y]),periodicInd2D(red,[x,y+1]),periodicInd2D(red,[x+1,y]),periodicInd2D(red,[x,y-1])] # coordinates
+    # of nearest neighbors
+    
     crossv1=makecross2D(red,[x-1,y])
     crossv2=makecross2D(red,[x,y+1])
     crossv3=makecross2D(red,[x+1,y])
@@ -562,26 +564,16 @@ function countFirst2D(N,edo,HPlist)
         el=indices2[k]
         xv,yv=coordinates1[k]
         if el == up
-            push!(coordinates2,[xv-1,yv])
+            push!(coordinates2,periodicInd2D(red,[xv-1,yv]))
         elseif el == right
-            push!(coordinates2,[xv,yv+1])
+            push!(coordinates2,periodicInd2D(red,[xv,yv+1]))
         elseif el == down
-            push!(coordinates2,[xv+1,yv])
+            push!(coordinates2,periodicInd2D(red,[xv+1,yv]))
         elseif el == left
-            push!(coordinates2,[xv,yv-1])
+            push!(coordinates2,periodicInd2D(red,[xv,yv-1]))
         end
     end
 
-    # Now I have the coordinates for `ind` and `ind+1`. I proceed to check wheter the new configuration would be valid.
-    deleteinds=Int8[]
-    for k in 1:length(indices1)
-        xa,ya=coordinates2[k] # Possible new coordinates for the first amino acid.
-        if validConfEnd2D(red,1,[xa,ya],edo,HPlist) != true
-            push!(deleteinds,k) # Store the indices that don´t satisfy the condition.
-        end
-    end
-    deleteat!(coordinates1,deleteinds)
-    deleteat!(coordinates2,deleteinds) # Delete possible coordinates.
 
     numpull=length(coordinates1)
     # Now we have the possible coordinates for the first two monomers, as well as the number of possible pull moves for the first 
@@ -629,15 +621,15 @@ function countLast2D(N,edo,HPlist)
     ind=length(HPlist)
     xminus,yminus=edo[ind-1,:]
     x,y=edo[ind,:]
-    dx=x-xminus
-    dy=y-yminus
-    rel1= dx > 0 && dy == 0
-    rel2= dx == 0 && dy < 0
-    rel3= dx < 0 && dy == 0
-    rel4= dx == 0 && dy > 0 # Conditions single out possible adjacent spaces to move the second to last amnino acid to.
+    
+    rel1= periodicInd2D(red,[x-1,y]) == periodicInd2D(red,[xminus,yminus])
+    rel2= periodicInd2D(red,[x,y+1]) == periodicInd2D(red,[xminus,yminus])
+    rel3= periodicInd2D(red,[x+1,y]) == periodicInd2D(red,[xminus,yminus])
+    rel4= periodicInd2D(red,[x,y-1]) == periodicInd2D(red,[xminus,yminus]) # Conditions single out possible adjacent spaces to move the second to last amnino acid to.
 
     vs=makecross2D(red,[x,y]) # These are the nearest neighbors to `ind`.
-    vscoords=[[x-1,y],[x,y+1],[x+1,y],[x,y-1]]
+    vscoords=[periodicInd2D(red,[x-1,y]),periodicInd2D(red,[x,y+1]),periodicInd2D(red,[x+1,y]),periodicInd2D(red,[x,y-1])] # coordinates
+    # of nearest neighbors
 
     crossv1=makecross2D(red,[x-1,y])
     crossv2=makecross2D(red,[x,y+1])
@@ -762,27 +754,17 @@ function countLast2D(N,edo,HPlist)
         el=indices2[k]
         xv,yv=coordinates1[k]
         if el == up
-            push!(coordinates2,[xv-1,yv])
+            push!(coordinates2,periodicInd2D(red,[xv-1,yv]))
         elseif el == right
-            push!(coordinates2,[xv,yv+1])
+            push!(coordinates2,periodicInd2D(red,[xv,yv+1]))
         elseif el == down
-            push!(coordinates2,[xv+1,yv])
+            push!(coordinates2,periodicInd2D(red,[xv+1,yv]))
         elseif el == left
-            push!(coordinates2,[xv,yv-1])
+            push!(coordinates2,periodicInd2D(red,[xv,yv-1]))
         end
     end
 
-    # Now I have the coordinates for `ind` and `ind-1`. I proceed to check whether the new configuration would be valid.
-    deleteinds=Int8[]
-    for k in 1:length(indices1)
-        xa,ya=coordinates2[k] # Possible new coordinates for the last amino acid.
-        if validConfEnd2D(red,length(HPlist),[xa,ya],edo,HPlist) != true
-            push!(deleteinds,k) # Store the indices that don´t satisfy the condition.
-        end
-    end
-    deleteat!(coordinates1,deleteinds)
-    deleteat!(coordinates2,deleteinds) # Delete possible coordinates.
-
+    
     numpull=length(coordinates1)
     # Now we have the possible coordinates for the last two monomers, as well as the number of possible pull moves for the last 
     # amino acid. Fo easier use, I turn the arrays `coordinates1,coordinates2` into a `numpull×2` matrices.
@@ -803,6 +785,49 @@ end
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+    diagSpaces2D(red,inds,indsp)
+
+Given a 2D array `red`, a couple of indices `inds` and `indsp`; returns the possible diagonal spaces to which `ind` might be moved to. 
+"""
+function diagSpaces2D(red,inds,indsp)
+    diagspaces=ones(Int8,4) # Possible diagonal spaces will have a value of zero.
+    x,y=periodicInd2D(red,inds) # Position of amino acid we wanr to move.
+    
+    
+    rel1= periodicInd2D(red,[x-1,y]) == periodicInd2D(red,indsp)
+    rel2= periodicInd2D(red,[x,y+1]) == periodicInd2D(red,indsp)
+    rel3= periodicInd2D(red,[x+1,y]) == periodicInd2D(red,indsp)
+    rel4= periodicInd2D(red,[x,y-1]) == periodicInd2D(red,indsp) # Possible relative positions between `inds,indsp`.
+
+    if rel1 # Fill `diagspaces` according to the relative positions.
+        diagspaces[1]= periodicArr2D(red,[x-1,y+1])
+        diagspaces[4]= periodicArr2D(red,[x-1,y-1])
+    elseif rel2 
+        diagspaces[1]= periodicArr2D(red,[x-1,y+1])
+        diagspaces[2]= periodicArr2D(red,[x+1,y+1])
+    elseif rel3 
+        diagspaces[2]= periodicArr2D(red,[x+1,y+1])
+        diagspaces[3]= periodicArr2D(red,[x+1,y-1])
+    elseif rel4 
+        diagspaces[3]= periodicArr2D(red,[x+1,y-1])
+        diagspaces[4]= periodicArr2D(red,[x-1,y-1])
+    end
+
+    return diagspaces
+end
 
 
 
@@ -838,74 +863,32 @@ function countMiddle2D(N,ind,edo,HPlist)
     # Now we check wether a pull-move is possible for the selected vertex. A diagonal space must be empty. Also, the empty
     # diagonal space must be adjacent to the amino acid correpsonding to `ind+1` or to `ind-1`.
     # First I check where `ind+1,ind-1` are.
-    xplus=edo[ind+1,1]
-    yplus=edo[ind+1,2] # Position of `ind+1`
-    xminus=edo[ind-1,1]
-    yminus=edo[ind-1,2] # Position of `ind-1`
-    x=edo[ind,1]
-    y=edo[ind,2] # Position of `ind`
+    xplus,yplus=edo[ind+1,:] # Position of `ind+1`
+    xminus,yminus=edo[ind-1,:] # Position of `ind-1`
+    x,y=edo[ind,:] # Position of `ind`
+
+
+    # Next we store the possible diagonal spaces for `ind` when we wish to pull backwards.
+    diagspaces1=diagSpaces2D(red,[x,y],[xplus,yplus])
     
-    dx=x-xplus
-    dy=y-yplus
-    lx=x-xminus
-    ly=y-yminus
-
-    rel1= dx > 0 && dy == 0
-    rel2= dx == 0 && dy < 0
-    rel3= dx < 0 && dy == 0
-    rel4= dx == 0 && dy > 0 # Conditions single out possible diagonal spaces to move to.
-
-    rela1= lx > 0 && ly == 0
-    rela2= lx == 0 && ly < 0
-    rela3= lx < 0 && ly == 0
-    rela4= lx == 0 && ly > 0 # Conditions single out possible diagonal spaces to move to.
-
-    # Next we store the possible diagonal spaces.
-    diagspaces1=ones(Int8,4)
-    if rel1 
-        diagspaces1[1]=red[x-1,y+1]
-        diagspaces1[4]=red[x-1,y-1]
-    elseif rel2 
-        diagspaces1[1]=red[x-1,y+1]
-        diagspaces1[2]=red[x+1,y+1]
-    elseif rel3 
-        diagspaces1[2]=red[x+1,y+1]
-        diagspaces1[3]=red[x+1,y-1]
-    elseif rel4 
-        diagspaces1[3]=red[x+1,y-1]
-        diagspaces1[4]=red[x-1,y-1]
-    end
-
-    diagspaces2=ones(Int8,4)
-    if rela1 
-        diagspaces2[1]=red[x-1,y+1]
-        diagspaces2[4]=red[x-1,y-1]
-    elseif rela2 
-        diagspaces2[1]=red[x-1,y+1]
-        diagspaces2[2]=red[x+1,y+1]
-    elseif rela3 
-        diagspaces2[2]=red[x+1,y+1]
-        diagspaces2[3]=red[x+1,y-1]
-    elseif rela4 
-        diagspaces2[3]=red[x+1,y-1]
-        diagspaces2[4]=red[x-1,y-1]
-    end
+    # STore possible diagonal spaces when we wish to pull forwards.
+    diagspaces2=diagSpaces2D(red,[x,y],[xminus,yminus])
 
 
-    v1=red[x-1,y]
-    v2=red[x,y+1]
-    v3=red[x+1,y]
-    v4=red[x,y-1]  # Possible sites to move `ind-1,ind+1` to.
+    v1=periodicArr2D(red,[x-1,y])
+    v2=periodicArr2D(red,[x,y+1])
+    v3=periodicArr2D(red,[x+1,y])
+    v4=periodicArr2D(red,[x,y-1])  # Possible sites to move `ind-1,ind+1` to.
 
-    cond1= edo[ind-1,:] == [x-1,y]
-    cond2= edo[ind-1,:] == [x,y+1]
-    cond3= edo[ind-1,:] == [x+1,y]
-    cond4= edo[ind-1,:] == [x,y-1] # `edo[ind-1,:]` is the current location on the array `red` of `ind-1`.
+    cond1= periodicInd2D(red,[xminus,yminus]) == periodicInd2D(red,[x-1,y])
+    cond2= periodicInd2D(red,[xminus,yminus]) == periodicInd2D(red,[x,y+1])
+    cond3= periodicInd2D(red,[xminus,yminus]) == periodicInd2D(red,[x+1,y])
+    cond4= periodicInd2D(red,[xminus,yminus]) == periodicInd2D(red,[x,y-1]) # `edo[ind-1,:]` is the current location on the array `red` of `ind-1`.
 
-    condit1= edo[ind+1,:] == [x-1,y]
-    condit2= edo[ind+1,:] == [x,y+1]
-    condit3= edo[ind+1,:] == [x+1,y]
-    condit4= edo[ind+1,:] == [x,y-1] # `edo[ind+1,:]` is the current location on the array `red` of `ind+1`.
+    condit1= periodicInd2D(red,[xplus,yplus]) == periodicInd2D(red,[x-1,y])
+    condit2= periodicInd2D(red,[xplus,yplus]) == periodicInd2D(red,[x,y+1])
+    condit3= periodicInd2D(red,[xplus,yplus]) == periodicInd2D(red,[x+1,y])
+    condit4= periodicInd2D(red,[xplus,yplus]) == periodicInd2D(red,[x,y-1]) # `edo[ind+1,:]` is the current location on the array `red` of `ind+1`.
     
     condi1= (v1 == 0) || cond1 # Either the place is empty, or `ind-1` is already there.
     condi2= (v2 == 0) || cond2
@@ -944,47 +927,60 @@ function countMiddle2D(N,ind,edo,HPlist)
         end
     end
 
+
+
+
+
     # I have an array with the possible spaces to move to. Now I have to check whether there is space for the amino acid 
     # correpsonding to `ind-1` to move to.
     coordinates1=[] # Possible coordinates for `ind`
     coordinates2=[] # Possible coordinates for `ind-1`.
+
+    diag1=periodicInd2D(red,[x-1,y+1])
+    diag2=periodicInd2D(red,[x+1,y+1])
+    diag3=periodicInd2D(red,[x+1,y-1])
+    diag4=periodicInd2D(red,[x-1,y-1]) # These are the coordinates I am going to push into `coordinates1`.
+
+    # The next array contains the coordinates I will push into `coordinates2`.
+    vscoords=[periodicInd2D(red,[x-1,y]),periodicInd2D(red,[x,y+1]),periodicInd2D(red,[x+1,y]),periodicInd2D(red,[x,y-1])]
+    
     if isempty(indices) == false
         for el in indices
 
             if el == 1
                 if condi1  # Either `v1` is empty or it is already occupied by `ind-1`. A pull move is all but assured.
-                    push!(coordinates1,[x-1,y+1]) # Record the possible new coordinates for `ind`.
-                    push!(coordinates2,[x-1,y])   # Record the possible new coordinates for `ind-1`.
+                    push!(coordinates1,diag1) # Record the possible new coordinates for `ind`.
+                    push!(coordinates2,vscoords[1])   # Record the possible new coordinates for `ind-1`.
                 elseif condi2 
-                    push!(coordinates1,[x-1,y+1]) 
-                    push!(coordinates2,[x,y+1])   
+                    push!(coordinates1,diag1) 
+                    push!(coordinates2,vscoords[2])   
                 end
 
             elseif el == 2
                 if condi2 
-                    push!(coordinates1,[x+1,y+1]) 
-                    push!(coordinates2,[x,y+1]) 
+                    push!(coordinates1,diag2) 
+                    push!(coordinates2,vscoords[2]) 
                 elseif condi3 
-                    push!(coordinates1,[x+1,y+1]) 
-                    push!(coordinates2,[x+1,y])  
+                    push!(coordinates1,diag2) 
+                    push!(coordinates2,vscoords[3])  
                 end
 
             elseif el == 3 
                 if condi3 
-                    push!(coordinates1,[x+1,y-1]) 
-                    push!(coordinates2,[x+1,y])  
+                    push!(coordinates1,diag3) 
+                    push!(coordinates2,vscoords[3])  
                 elseif condi4 
-                    push!(coordinates1,[x+1,y-1]) 
-                    push!(coordinates2,[x,y-1]) 
+                    push!(coordinates1,diag3) 
+                    push!(coordinates2,vscoords[4]) 
                 end
 
             elseif el == 4 
                 if condi4 
-                    push!(coordinates1,[x-1,y-1]) 
-                    push!(coordinates2,[x,y-1])
+                    push!(coordinates1,diag4) 
+                    push!(coordinates2,vscoords[4])
                 elseif condi1 
-                    push!(coordinates1,[x-1,y-1]) 
-                    push!(coordinates2,[x-1,y])
+                    push!(coordinates1,diag4) 
+                    push!(coordinates2,vscoords[1])
                 end
             end
         end
@@ -1000,38 +996,38 @@ function countMiddle2D(N,ind,edo,HPlist)
 
             if el == 1
                 if condi1  # Either `v1` is empty or it is already occupied by `ind+1`. A pull move is all but assured.
-                    push!(coordinatesi,[x-1,y+1]) # Record the possible new coordinates for `ind`.
-                    push!(coordinatesii,[x-1,y])   # Record the possible new coordinates for `ind+1`.
+                    push!(coordinatesi,diag1) # Record the possible new coordinates for `ind`.
+                    push!(coordinatesii,vscoords[1])   # Record the possible new coordinates for `ind+1`.
                 elseif condi2 
-                    push!(coordinatesi,[x-1,y+1]) 
-                    push!(coordinatesii,[x,y+1])   
+                    push!(coordinatesi,diag1) 
+                    push!(coordinatesii,vscoords[2])   
                 end
 
             elseif el == 2
                 if condi2 
-                    push!(coordinatesi,[x+1,y+1]) 
-                    push!(coordinatesii,[x,y+1]) 
+                    push!(coordinatesi,diag2) 
+                    push!(coordinatesii,vscoords[2]) 
                 elseif condi3 
-                    push!(coordinatesi,[x+1,y+1]) 
-                    push!(coordinatesii,[x+1,y])  
+                    push!(coordinatesi,diag2) 
+                    push!(coordinatesii,vscoords[3])  
                 end
 
             elseif el == 3 
                 if condi3 
-                    push!(coordinatesi,[x+1,y-1]) 
-                    push!(coordinatesii,[x+1,y])  
+                    push!(coordinatesi,diag3) 
+                    push!(coordinatesii,vscoords[3])  
                 elseif condi4 
-                    push!(coordinatesi,[x+1,y-1]) 
-                    push!(coordinatesii,[x,y-1]) 
+                    push!(coordinatesi,diag3) 
+                    push!(coordinatesii,vscoords[4]) 
                 end
 
             elseif el == 4 
                 if condi4 
-                    push!(coordinatesi,[x-1,y-1]) 
-                    push!(coordinatesii,[x,y-1])
+                    push!(coordinatesi,diag4) 
+                    push!(coordinatesii,vscoords[4])
                 elseif condi1 
-                    push!(coordinatesi,[x-1,y-1]) 
-                    push!(coordinatesii,[x-1,y])
+                    push!(coordinatesi,diag4) 
+                    push!(coordinatesii,vscoords[1])
                 end
             end
         end
@@ -1291,7 +1287,7 @@ function pullMove2D(N,edo,HPlist)
 
     elseif  s2 ≤ m ≤ s3
         mp=m-(s2-1) # `mp is the position` for the moves corresponding to the final monomer in the chain.
-        println("ind=",ind)
+        ind=length(HPlist)
         singleMove2D(red,edo[ind,:],coords3[mp,:]) # Move `ind`.
         newedo[ind,:]=coords3[mp,:] # Record the change.
         singleMove2D(red,edo[ind-1,:],coords4[mp,:]) # Makes the move.

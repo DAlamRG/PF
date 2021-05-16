@@ -146,6 +146,7 @@ function HP2Dmet(N,ns,T,edo,HPlist)
     
     #Generate new states by performing pull moves.
     for l in 2:ns+1 
+        
 
         # Generate a new state.
         newred,newedo,totalpull = pullMove2D(N,states[:,:,l-1],HPlist)

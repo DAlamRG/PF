@@ -1188,7 +1188,7 @@ function middleInd2D(mp,matrix)
             break
         end
     end
-    
+
     if mp ≤ nb[1]
         pos=mp
     else
@@ -1238,8 +1238,7 @@ function pullMove2D(N,edo,HPlist)
 
     # Randomly choose one of the pull moves.
     m=rand(1:totalpull)
-
-
+    
     # Make subdivisions according to the type of move.
     if isempty(coords1)
         s1=0
@@ -1249,7 +1248,8 @@ function pullMove2D(N,edo,HPlist)
 
     if isempty(coords3)
         s2=0
-        s3=0
+        s3=s1
+
     else
         s2=s1+1
         s3=s1+(size(coords3)[1])
@@ -1259,7 +1259,6 @@ function pullMove2D(N,edo,HPlist)
     s5=s3+tmid
     s6=s5+1
     
-
 
     # Type of pull move depends on the value of `m`.
     if m ≤ s1 # First monomer is moved.

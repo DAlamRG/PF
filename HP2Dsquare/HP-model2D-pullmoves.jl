@@ -859,6 +859,7 @@ function countMiddle2D(N,ind,edo,HPlist)
     
     # I set up the protein within the array.
     red=makeLattice(N,edo,HPlist)
+    
 
     # Now we check wether a pull-move is possible for the selected vertex. A diagonal space must be empty. Also, the empty
     # diagonal space must be adjacent to the amino acid correpsonding to `ind+1` or to `ind-1`.
@@ -871,8 +872,10 @@ function countMiddle2D(N,ind,edo,HPlist)
     # Next we store the possible diagonal spaces for `ind` when we wish to pull backwards.
     diagspaces1=diagSpaces2D(red,[x,y],[xplus,yplus])
     
-    # STore possible diagonal spaces when we wish to pull forwards.
+    
+    # Store possible diagonal spaces when we wish to pull forwards.
     diagspaces2=diagSpaces2D(red,[x,y],[xminus,yminus])
+    
 
 
     v1=periodicArr2D(red,[x-1,y])
@@ -926,8 +929,8 @@ function countMiddle2D(N,ind,edo,HPlist)
             continue
         end
     end
-
-
+    
+    
 
 
 
@@ -995,37 +998,37 @@ function countMiddle2D(N,ind,edo,HPlist)
         for el in indices2
 
             if el == 1
-                if condi1  # Either `v1` is empty or it is already occupied by `ind+1`. A pull move is all but assured.
+                if conditio1  # Either `v1` is empty or it is already occupied by `ind+1`. A pull move is all but assured.
                     push!(coordinatesi,diag1) # Record the possible new coordinates for `ind`.
                     push!(coordinatesii,vscoords[1])   # Record the possible new coordinates for `ind+1`.
-                elseif condi2 
+                elseif conditio2 
                     push!(coordinatesi,diag1) 
                     push!(coordinatesii,vscoords[2])   
                 end
 
             elseif el == 2
-                if condi2 
+                if conditio2 
                     push!(coordinatesi,diag2) 
                     push!(coordinatesii,vscoords[2]) 
-                elseif condi3 
+                elseif conditio3 
                     push!(coordinatesi,diag2) 
                     push!(coordinatesii,vscoords[3])  
                 end
 
             elseif el == 3 
-                if condi3 
+                if conditio3 
                     push!(coordinatesi,diag3) 
                     push!(coordinatesii,vscoords[3])  
-                elseif condi4 
+                elseif conditio4 
                     push!(coordinatesi,diag3) 
                     push!(coordinatesii,vscoords[4]) 
                 end
 
             elseif el == 4 
-                if condi4 
+                if conditio4 
                     push!(coordinatesi,diag4) 
                     push!(coordinatesii,vscoords[4])
-                elseif condi1 
+                elseif conditio1 
                     push!(coordinatesi,diag4) 
                     push!(coordinatesii,vscoords[1])
                 end

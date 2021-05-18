@@ -84,8 +84,9 @@ function energy(N,edo,HPlist)
     end
     en=((enp)-2*countH(HPlist))/2 # The total energy is obtained by substracting the number of covalent bonds to `enp` 
     #and dividing the resulting number by two.
-    return en
+    return -en
 end
+
 
 
 
@@ -176,11 +177,11 @@ function HP2Dmet(N,ns,T,edo,HPlist)
                 enstates[l]=newenergy 
                 npullstates[l]=totalpull
                 difes[l-1]=ΔH
-            else # MOve is not accepted, the protein´s configuration stays the same.
-                redarray[:,:,l]=redarray[:,:,l-1]
-                states[:,:,l]=states[:,:,l-1]
-                enstates[l]=enstates[l-1]
-                npullstates[l]=npullstates[l-1]
+            else # Move is not accepted, the protein´s configuration stays the same.
+                redarray[:,:,l]=copy(redarray[:,:,l-1])
+                states[:,:,l]=copy(states[:,:,l-1])
+                enstates[l]=copy(enstates[l-1])
+                npullstates[l]=copy(npullstates[l-1])
                 difes[l-1]=0
             end
         end

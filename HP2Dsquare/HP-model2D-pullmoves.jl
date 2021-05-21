@@ -4,6 +4,36 @@ include("./visualizeHP2D.jl")
 
 
 
+
+
+
+
+#Before doing anything, I define a structure which will encode the "protein" object.
+
+@enum geometries::Int8 begin # First, define the type of geometries as an enum type.
+    square2D=1
+    triangular2D=2
+end
+
+
+
+struct Protein2D
+    edo :: Matrix{Int64} # This encodes the amino acidds positions within the array.
+    HPlist :: Array{Int8,1} # This encodes the protein´s amino acid sequence.
+    geometry :: Enum # This defines the type of geometry that the protein is embedded in.
+end
+
+
+
+
+
+
+
+
+
+
+
+
 """
     periodicInd2D(A,indices)
 

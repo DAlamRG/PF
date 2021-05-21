@@ -115,16 +115,20 @@ end
 # given configuration, I proceed to implement a simulation using the Metropolis-Hastings algorithm.
 
 """
-    HP2Dmet(N,ns,T,edo,HPlist) 
+    HP2Dmet(N,nums,T,protein) 
 
-Given a 2D array size `N`, a number of steps `ns`, the temperature T, a matrix encoding the aminoacids positions `edo`, 
-and an array containing the sequence of H,P aminoacids `HPlist`; returns the final configuration after performing a simulation 
-using the Metropolis-Hastings algorithm.
+Given a 2D array size `N`, a number of Monte-Carlo sweeps `nums`, the temperature T, and a structure `protein` encoding the protein´s configuration; 
+returns the final configuration and the visited energies after performing a simulation using the Metropolis-Hastings algorithm.
 """
-function HP2Dmet(N,ns,T,edo,HPlist) 
+function HP2Dmet(N,nums,T,protein) 
     
 
     β=1/T
+    ns=nums*length(HPlist) # Total number of iterations
+    edo=protein.edo
+    HPlist=protein.HPlist
+    geometry=protein.geometry
+
     red=makeLattice(N,edo,HPlist)
     
     redarray=ones(Int8,(N,N,ns+1)) # Multidimensional array whose entries `redarray[:,:,j]` are the matrices`red` at a time t=j.

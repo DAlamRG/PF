@@ -179,7 +179,12 @@ function validConf(N,ind,edo,HPlist,dir)
                 ycond2= y1 == N && y2 == 1
                 ycond= ycond1 || ycond2
     
-                if dx > 1
+
+                if dx ==1 && dy ==1 
+                    ans=false
+                    break
+                
+                elseif dx > 1
                     if xcond == false
                         ans=false
                         break
@@ -218,6 +223,11 @@ function validConf(N,ind,edo,HPlist,dir)
                 ycond2= y1 == N && y2 == 1
                 ycond= ycond1 || ycond2
     
+
+                if dx ==1 && dy ==1 
+                    ans=false
+                    break
+
                 if dx > 1
                     if xcond == false
                         ans=false

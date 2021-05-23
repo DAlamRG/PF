@@ -37,7 +37,7 @@ a plot of the energies as a function of iteration step.
 """
 function energiesHP2D(T,energies)
     pp=plot(1:length(energies),energies,color="green",lw=2,alpha=0.7,xlabel="iteration step",
-    ylabel="E(T)",label="",title="Visited energies at T=$T")
+    ylabel="E",label="",title="Visited energies at T=$T")
     display(pp)
 end
 

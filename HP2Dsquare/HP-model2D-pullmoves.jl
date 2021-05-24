@@ -183,8 +183,9 @@ function validConf(N,ind,edo,HPlist,dir)
                 if dx ==1 && dy ==1 
                     ans=false
                     break
+                end
                 
-                elseif dx > 1
+                if dx > 1
                     if xcond == false
                         ans=false
                         break
@@ -227,6 +228,7 @@ function validConf(N,ind,edo,HPlist,dir)
                 if dx ==1 && dy ==1 
                     ans=false
                     break
+                end
 
                 if dx > 1
                     if xcond == false
@@ -394,6 +396,10 @@ end
 
 
 
+
+
+
+
 # I believe this function is not neccesary. I leave it here just in case it comes in handy later.
 """
     validConfEnd2D(red,ind,inds,edo,HPlist)
@@ -434,6 +440,12 @@ function validConfEnd2D(red,ind,inds,edo,HPlist)
     end
     return value
 end
+
+
+
+
+
+
 
 
 

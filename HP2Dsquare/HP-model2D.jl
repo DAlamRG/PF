@@ -1,6 +1,6 @@
 # First attempt at programming the Metropolis algorithm for the HP model.
 
-include("./HP-model2D-pullmoves.jl")
+include("/Users/pedroruiz/Desktop/Diego/PF/HP2Dtriangle/HP-model2D-pullmoves-triangle.jl")
 
 
 
@@ -50,14 +50,15 @@ end
 
 
 
-# Next, I define  a function which takes the configuration of the protein within a 2Darray and outputs its energy.
+# Next, I define  a function which takes the configuration of the protein within a 2Darray and outputs its energy. It also takes the geometry of
+# the lattice into account.
 """
-    energy(N,edo,HPlist)
+    energy(N,edo,HPlist,geometry)
 
-Given a 2D array size `N`, a matrix encoding the aminoacids positions `edo`, and an array containing the sequence of H,P aminoacids `HPlist`; 
-returns the energy of the configuration.
+Given a 2D array size `N`, a matrix encoding the aminoacids positions `edo`, an array containing the sequence of H,P aminoacids `HPlist`,
+and the geometry of the lattice; returns the energy of the configuration.
 """
-function energy(N,edo,HPlist)
+function energy(N,edo,HPlist,geometry)
     red=makeLattice(N,edo,HPlist)
     
     # I create an auxiliary array with periodic boundary conditions.
@@ -71,17 +72,37 @@ function energy(N,edo,HPlist)
     # Next, I iterate over the protein´s vertices and compute the number of H-H bonds.
     # To avoid counting the covalent bonds, I substract two times the value of `countBH(HPlist)`.
     enp=0
-    for i in 1:length(HPlist)
-        if HPlist[i]==1 
-            continue
-        elseif HPlist[i]==-1
-            x=edo[i,1]+1
-            y=edo[i,2]+1 # I have to shift both indices by one place because we are working on the extended array `redaux`.
-            cruz=[redaux[x+1,y],redaux[x,y+1],redaux[x-1,y],redaux[x,y-1]] # I define an array with the next closest neighbors.
-            c=count(i->(i==-1),cruz)
-            enp=enp+(c)
+
+    if geometry == square2D
+        for i in 1:length(HPlist)
+            if HPlist[i]==1 
+                continue
+            elseif HPlist[i]==-1
+                x=edo[i,1]+1
+                y=edo[i,2]+1 # I have to shift both indices by one place because we are working on the extended array `redaux`.
+                cruz=[redaux[x+1,y],redaux[x,y+1],redaux[x-1,y],redaux[x,y-1]] # I define an array with the next closest neighbors.
+                c=count(i->(i==-1),cruz)
+                enp=enp+(c)
+            end
+        end
+
+    elseif geometry == triangular2D
+        for i in 1:length(HPlist)
+            if HPlist[i]==1 
+                continue
+            elseif HPlist[i]==-1
+                x=edo[i,1]+1
+                y=edo[i,2]+1 # I have to shift both indices by one place because we are working on the extended array `redaux`.
+                # I define an array with the nearest neighbors.
+                nn=[redaux[x-1,y],redaux[x,y+1],redaux[x+1,y+1],redaux[x+1,y],redaux[x,y-1],redaux[x-1,y-1]] 
+                c=count(i->(i==-1),nn)
+                enp=enp+(c)
+            end
         end
     end
+
+
+
     en=((enp)-2*countH(HPlist))/2 # The total energy is obtained by substracting the number of covalent bonds to `enp` 
     #and dividing the resulting number by two.
     return -en
@@ -139,10 +160,10 @@ function HP2Dmet(N,nums,T,protein)
     
     difes=zeros(Float64,ns) # Stores the energy difference ΔH between states.
     enstates=zeros(Float64,ns+1) # Stores the energy of each state visited during the simulation.
-    enstates[1]=energy(N,edo,HPlist) # Compute the energy of the initial state and store it.
+    enstates[1]=energy(N,edo,HPlist,geometry) # Compute the energy of the initial state and store it.
     
     npullstates=zeros(Float64,ns+1) # Stores the number of pull moves for each configuration.
-    npullstates[1]=countpull2D(N,edo,HPlist)[1] # Count the number of pull moves for the initial state and store it.
+    npullstates[1]=totalpull2Dg(N,edo,HPlist,geometry)[1] # Count the number of pull moves for the initial state and store it.
 
     
     
@@ -154,8 +175,8 @@ function HP2Dmet(N,nums,T,protein)
         
 
         # Generate a new state.
-        newred,newedo,totalpull = pullMove2D(N,states[:,:,l-1],HPlist)
-        newenergy=energy(N,newedo,HPlist) # Compute the energy after the pull move.
+        newred,newedo,totalpull = pullMove2DGeneral(N,states[:,:,l-1],HPlist,geometry)
+        newenergy=energy(N,newedo,HPlist,geometry) # Compute the energy after the pull move.
         
         ΔH=newenergy-enstates[l-1] # Compute the energy difference.
         
@@ -204,3 +225,7 @@ end
 # testprotein=Protein2D([[20 10];[20 11];[20 12];[20 13];[20 14];[20 15];[20 16];[20 17];[20 18];[20 19];[20 20];[20 21];[20 22];[20 23];[20 24];[20 25];[20 26];[20 27];[20 28];[20 29]],[-1,1,-1,1,1,-1,-1,1,-1,1,1,-1,1,-1,-1,1,1,-1,1,-1],square2D)
 
 # info=HP2Dmet(40,40000,0.2,testprotein)
+
+#testproteinT=Protein2D([[7 2];[7 3];[7 4];[7 5];[7 6];[7 7];[7 8];[7 9];[7 10];[7 11]],[1,-1,-1,1,-1,1,-1,1,-1,-1],triangular2D)
+
+# infoT=HP2Dmet(20,4000,0.2,testproteinT)

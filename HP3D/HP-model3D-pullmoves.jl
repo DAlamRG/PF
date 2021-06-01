@@ -8,7 +8,7 @@
     square2D=1
     triangular2D=2
     cubic=3
-    hcp=4
+    fcc=4
 end
 
 
@@ -35,13 +35,12 @@ end
 
 
 """
-    periodicInd3D(A,indices)
+    periodicInd3D(L,indices)
 
-Given a 3D array `A` and a couple of indices, returns the indices for the equivalent array with periodic boundary conditions.
+Given the size of a 3D array `L` and a couple of indices, returns the indices for the equivalent array with periodic boundary conditions.
 """
-function periodicInd3D(A,indices)
-    lx,ly,lz=size(A)
-    ix,iy,iz=indices
+function periodicInd3D(L,indices)
+    ix=iy=iz=L
     Ix=mod1(ix,lx)
     Iy=mod1(iy,ly)
     Iz=mod1(iz,lz)
@@ -64,13 +63,12 @@ end
 
 
 """
-    periodicArr3D(A,indices)
+    periodicArr3D(L,indices)
 
-Given a 3D array `A` and a couple of indices, returns the value of the equivalent array with periodic boundary conditions.
+    Given the size of a 3D array `L` and a couple of indices, returns the value of the equivalent array with periodic boundary conditions.
 """
-function periodicArr3D(A,indices)
-    lx,ly,lz=size(A)
-    ix,iy,iz=indices
+function periodicArr3D(L,indices)
+    ix=iy=iz=L
     Ix=mod1(ix,lx)
     Iy=mod1(iy,ly)
     Iz=mod1(iz,lz)

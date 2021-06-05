@@ -25,6 +25,7 @@ end
 @enum directions::Int8 begin
         forwards=1
         backwards=2
+        nonetaken=3
     end
 
 
@@ -35,12 +36,13 @@ end
 
 
 """
-    periodicInd3D(L,indices)
+    periodicInd3D(A,indices)
 
-Given the size of a 3D array `L` and a couple of indices, returns the indices for the equivalent array with periodic boundary conditions.
+Given a 3D array `A` and a couple of indices, returns the indices for the equivalent array with periodic boundary conditions.
 """
-function periodicInd3D(L,indices)
-    ix=iy=iz=L
+function periodicInd3D(A,indices)
+    lx,ly,lz=size(A)
+    ix,iy,iz=indices
     Ix=mod1(ix,lx)
     Iy=mod1(iy,ly)
     Iz=mod1(iz,lz)
@@ -63,18 +65,22 @@ end
 
 
 """
-    periodicArr3D(L,indices)
+    periodicArr3D(A,indices)
 
-    Given the size of a 3D array `L` and a couple of indices, returns the value of the equivalent array with periodic boundary conditions.
+Given a 3D array `A` and a couple of indices, returns the value of the equivalent array with periodic boundary conditions.
 """
-function periodicArr3D(L,indices)
-    ix=iy=iz=L
+function periodicArr3D(A,indices)
+    lx,ly,lz=size(A)
+    ix,iy,iz=indices
     Ix=mod1(ix,lx)
     Iy=mod1(iy,ly)
     Iz=mod1(iz,lz)
         
     return A[Ix,Iy,Iz]
 end
+
+
+
 
 
 
@@ -111,7 +117,7 @@ function makeLattice3D(N,edo,HPlist)
         z=edo[k,3]
         x,y,z=periodicInd3D(red,[x,y,z])
         red[x,y,z]=HPlist[k]
-    end
+    end    
     return red
 end
 
@@ -140,19 +146,23 @@ Given a 3D array `red`, and a couple of indices `inds`, and a geometry `geometry
 """
 function nearestNeighbors3D(red,inds,geometry)
     A=red
-    x,y,z=inds
-    x,y,z=periodicInd3D(red,[x,y,z])
 
     if geometry == cubic 
+        x,y,z=inds
+        x,y,z=periodicInd3D(red,[x,y,z])
         nn=Int8[periodicArr3D(A,[x-1,y,z]),periodicArr3D(A,[x,y+1,z]),periodicArr3D(A,[x+1,y,z]),periodicArr3D(A,[x,y-1,z]),
         periodicArr3D(A,[x,y,z+1]),periodicArr3D(A,[x,y,z-1])] # Last two neighbors fall outside x-y plane.
     
     
-    elseif geometry == hcp # First six neighbors are in the same x-y plane. The remaining six are in other planes.
-        nn=Int8[periodicArr3D(A,[x-1,y,z]),periodicArr3D(A,[x,y+1,z]),periodicArr3D(A,[x+1,y+1,z]),periodicArr3D(A,[x+1,y,z])
-        ,periodicArr3D(A,[x,y-1,z]),periodicArr3D(A,[x-1,y-1,z]),
-        periodicArr3D(A,[x,y,z-1]),periodicArr3D(A,[x+1,y,z-1]),periodicArr3D(A,[x,y-1,z-1]),
-        periodicArr3D(A,[x,y,z+1]),periodicArr3D(A,[x+1,y,z+1]),periodicArr3D(A,[x,y-1,z+1])]
+    elseif geometry == fcc # Fcc geometry has 12 topological nearest neighbors.
+        i,j,k=inds
+        i,j,k=periodicInd3D(red,[i,j,k])
+        nn=Int8[periodicArr3D(A,[i+1,j,k]),periodicArr3D(A,[i-1,j,k])
+        ,periodicArr3D(A,[i,j+1,k]),periodicArr3D(A,[i,j-1,k])
+        ,periodicArr3D(A,[i,j,k+1]),periodicArr3D(A,[i,j,k-1])
+        ,periodicArr3D(A,[i+1,j-1,k]),periodicArr3D(A,[i-1,j+1,k])
+        ,periodicArr3D(A,[i,j+1,k-1]),periodicArr3D(A,[i,j-1,k+1])
+        ,periodicArr3D(A,[i-1,j,k+1]),periodicArr3D(A,[i+1,j,k-1])]
     end
     
     return nn
@@ -192,11 +202,15 @@ function nearestNeighborsCoords3D(red,inds,geometry)
         periodicInd3D(A,[x,y,z+1]),periodicInd3D(A,[x,y,z-1])] # Last two neighbors fall outside x-y plane.
     
     
-    elseif geometry == hcp # First six neighbors are in the same x-y plane. The remaining six are outside.
-        nnc=Vector{Int8}[periodicInd3D(A,[x-1,y,z]),periodicInd3D(A,[x,y+1,z]),periodicInd3D(A,[x+1,y+1,z]),periodicInd3D(A,[x+1,y,z])
-        ,periodicInd3D(A,[x,y-1,z]),periodicInd3D(A,[x-1,y-1,z]),
-        periodicInd3D(A,[x,y,z-1]),periodicInd3D(A,[x+1,y,z-1]),periodicInd3D(A,[x,y-1,z-1]),
-        periodicInd3D(A,[x,y,z+1]),periodicInd3D(A,[x+1,y,z+1]),periodicInd3D(A,[x,y-1,z+1])]
+    elseif geometry == fcc # First six neighbors are in the same x-y plane. The remaining six are outside.
+        i,j,k=inds
+        i,j,k=periodicInd3D(red,[i,j,k])
+        nnc=Vector{Int8}[periodicInd3D(A,[i+1,j,k]),periodicInd3D(A,[i-1,j,k])
+        ,periodicInd3D(A,[i,j+1,k]),periodicInd3D(A,[i,j-1,k])
+        ,periodicInd3D(A,[i,j,k+1]),periodicInd3D(A,[i,j,k-1])
+        ,periodicInd3D(A,[i+1,j-1,k]),periodicInd3D(A,[i-1,j+1,k])
+        ,periodicInd3D(A,[i,j+1,k-1]),periodicInd3D(A,[i,j-1,k+1])
+        ,periodicInd3D(A,[i-1,j,k+1]),periodicInd3D(A,[i+1,j,k-1])]
     end
     
     return nnc
@@ -223,7 +237,7 @@ end
 """
     sharedNeighborsCoords3D(red,inds,indsp,geometry)
 
-Given a 3D array `red`, a couple of indices `inds` and `indsp`, and a geometry; returns the coordinates for the empty shared 
+Given a 3D array `red`, a couple of indices `inds` and `indsp`, and a geometry; returns the coordinates for the empty shared topological
 neighbors by `inds,indsp` for the given 3D geometry. 
 """
 function sharedNeighborsCoords3D(red,inds,indsp,geometry)
@@ -235,7 +249,7 @@ function sharedNeighborsCoords3D(red,inds,indsp,geometry)
         println("Hello, this function´s not complete yet")
 
 
-    elseif geometry == hcp
+    elseif geometry == fcc
         sharedNC=Vector{Int8}[] # Empty shared neighbor spaces will have a value of zero.
     
         for i in 1:12
@@ -271,7 +285,7 @@ end
 """
     excludedNeighborsCoords3D(red,inds,indsp,geometry)
 
-Given a 3D array `red`, a couple of indices `inds` and `indsp`, and a geometry; returns the coordinates for the empty not shared neighbor spaces by 
+Given a 3D array `red`, a couple of indices `inds` and `indsp`, and a geometry; returns the coordinates for the empty not-shared neighbor spaces by 
 `inds,indsp` for the given 3D geometry.  
 """
 function excludedNeighborsCoords3D(red,inds,indsp,geometry)
@@ -283,7 +297,7 @@ function excludedNeighborsCoords3D(red,inds,indsp,geometry)
         println("Hello, this function´s not complete yet")
 
 
-    elseif geometry == hcp
+    elseif geometry == fcc
         notsharedNC=Vector{Int8}[] # Empty shared neighbor spaces will have a value of zero.
         
         for i in 1:12
@@ -329,8 +343,8 @@ function validConf3D(N,ind,edo,HPlist,dir,geometry)
     # I set up the protein within the array.
     red=makeLattice3D(N,edo,HPlist)
 
-    # Next, I iterate over the protein´s vertices, computing the "distance" to the next vertex. The direction in which I check the
-    # structure is determined by `dir`.
+    # Next, I iterate over the protein´s vertices, cheacking wether each pair of positions is in each other´s list of nearest neighbors.
+    # The direction in which I check the structure is determined by `dir`.
     ans=true
 
     if geometry ==  cubic # Check for validty in square geometry.
@@ -339,8 +353,7 @@ function validConf3D(N,ind,edo,HPlist,dir,geometry)
     
     
     
-    
-    elseif geometry == hcp # Check the validty in triangular geometry.
+    elseif geometry == fcc # Check the validty in fcc geometry.
         if dir == backwards
             if ind !=1
                 for j in ind:-1:2
@@ -348,7 +361,7 @@ function validConf3D(N,ind,edo,HPlist,dir,geometry)
                     x1,y1,z1=periodicInd3D(red,[x1,y1,z1]) # Make the indices periodic.
                     x2,y2,z2=edo[j-1,:]
                     x2,y2,z2=periodicInd3D(red,[x2,y2,z2]) # Make the indices periodic.
-                    nnc=nearestNeighborsCoords3D(red,[x1,y1,z1],geometry) # Nearest neigbors to our index `ind`.
+                    nnc=nearestNeighborsCoords3D(red,[x1,y1,z1],geometry) # Nearest neigbors to the position `[x1,y1,z1]`.
                     
 
                     if ([x2,y2,z2] in nnc) == false # Configuration is not valid.
@@ -367,7 +380,7 @@ function validConf3D(N,ind,edo,HPlist,dir,geometry)
                     x1,y1,z1=periodicInd3D(red,[x1,y1,z1]) # Make the indices periodic.
                     x2,y2,z2=edo[j+1,:]
                     x2,y2,z2=periodicInd3D(red,[x2,y2,z2]) # Make the indices periodic.
-                    nnc=nearestNeighborsCoords3D(red,[x1,y1,z1],geometry) # Nearest neigbors to our index `ind`.
+                    nnc=nearestNeighborsCoords3D(red,[x1,y1,z1],geometry) # Nearest neigbors to the position `[x1,y1,z1]`.
                     
 
                     if ([x2,y2,z2] in nnc) == false # Configuration is not valid.
@@ -410,7 +423,7 @@ function countFirst3D(N,edo,HPlist,geometry)
     if geometry == cubic
         println("Work in progress")
     
-    elseif geometry == hcp
+    elseif geometry == fcc
         red=makeLattice3D(N,edo,HPlist)
         ind=1
         xplus,yplus,zplus=edo[ind+1,:]
@@ -419,7 +432,7 @@ function countFirst3D(N,edo,HPlist,geometry)
         # Find out which spaces are free for `ind` to move into.
         coordinates1=excludedNeighborsCoords3D(red,[x,y,z],[xplus,yplus,zplus],geometry)
 
-        numpull=length(coordinates1)
+        numpull=length(coordinates1) # Calculate the number of pull-moves.
         # Now we have the possible coordinates for the first monomer, as well as the number of possible pull moves for the first 
         # amino acid. Fo easier use, I turn the arrays into matrices.
 
@@ -461,11 +474,11 @@ function countLast3D(N,edo,HPlist,geometry)
     if geometry == cubic
         println("Not yet done")
 
-    elseif geometry == hcp
+    elseif geometry == fcc
         # Find out which spaces are free for `ind` to move into.
         coordinates1=excludedNeighborsCoords3D(red,[x,y,z],[xminus,yminus,zminus],geometry)
 
-        numpull=length(coordinates1)
+        numpull=length(coordinates1) # Calculate the number of pull moves.
         # Now we have the possible coordinates for the first monomer, as well as the number of possible pull moves for the first 
         # amino acid. Fo easier use, I turn the arrays into matrices.
 
@@ -723,6 +736,8 @@ end
 
 Given a 3D array size `N`, a matrix encoding the aminoacids positions `edo`, an array containing 
 the sequence of H,P aminoacids `HPlist`, and a geometry; chooses an index and performs a full pull move for the generated index. 
+The function also returns the final state `newedo`, a number of possible pull moves `totalpull` for the 
+initial configuration, the position of the pulled monomer `indpulled`, and the new position for the pulled index `newcoord`.
 """
 function pullMove3D(N,edo,HPlist,geometry)    
     
@@ -764,6 +779,9 @@ function pullMove3D(N,edo,HPlist,geometry)
         ind=1
         #singleMove(red,edo[ind,:],coords1[m,:]) # Move `ind`.
         newedo[ind,:]=coords1[m,:] # Record the change.
+        indpulled=ind # Function returns the index pulled in the move.
+        newcoord=newedo[ind,:] # Function returns the new coordinate for the pulled index.
+        dirpulled= forwards
 
         # If all went well, a move has been done, now I have to check whether the current configuration is valid.
         stateconf=validConf3D(N,ind,newedo,HPlist,forwards,geometry)
@@ -790,6 +808,9 @@ function pullMove3D(N,edo,HPlist,geometry)
         ind=length(HPlist)
         #singleMove(red,edo[ind,:],coords3[mp,:]) # Move `ind`.
         newedo[ind,:]=coords3[mp,:] # Record the change.
+        indpulled=ind
+        newcoord=newedo[ind,:]
+        dirpulled= backwards
 
         # If all went well, a move has been done, now I have to check whether the current configuration is valid.
         stateconf=validConf3D(N,ind,newedo,HPlist,backwards,geometry)
@@ -816,6 +837,9 @@ function pullMove3D(N,edo,HPlist,geometry)
         indm,ind,pos=middleInd(mp,matrixb)
         #singleMove(red,edo[indm,:],middlecoords1[ind][pos,:])
         newedo[indm,:]=middlecoords1[ind][pos,:]
+        indpulled=indm
+        newcoord=newedo[indm,:]
+        dirpulled= backwards
 
         # If all went well, a move has been done, now I have to check whether the current configuration is valid.
         stateconf=validConf3D(N,indm,newedo,HPlist,backwards,geometry)
@@ -840,6 +864,9 @@ function pullMove3D(N,edo,HPlist,geometry)
         indm,ind,pos=middleInd(mp,matrixf)
         #singleMove(red,edo[indm,:],middlecoords3[ind][pos,:])
         newedo[indm,:]=middlecoords3[ind][pos,:]
+        indpulled=indm
+        newcoord=newedo[indm,:]
+        dirpulled= forwards
 
         # If all went well, a move has been performed, now I have to check whether the current configuration is valid.
         stateconf=validConf3D(N,indm,newedo,HPlist,forwards,geometry)
@@ -861,8 +888,129 @@ function pullMove3D(N,edo,HPlist,geometry)
 
     end
     
-    newred=makeLattice3D(N,newedo,HPlist)
+
+
     
-    return (newred,newedo,totalpull) # Returns everything neccesary to reproduce the final configuration and implement
+    return (newedo,totalpull,indpulled,newcoord,dirpulled) # Returns everything neccesary to reproduce the final configuration and implement
     # the Metropolis algorithm.
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+    reconstructStates3D(N,edo,HPlist,pulledindices,dirs,newcoords,geometry)
+Given a lattice size `N`, a matrix encoding the aminoacids initial position `edo`, an aminoacid sequence `HPlist` ,an array containing the 
+pulled indices `pulledindices`, an array containing the direction in which the chain was pulled `dirs`, a matrix containing the new positions 
+for the pulled indices `newcoords`, a geometry; returns a multidimensional array containing the states at each point of the Metropolis scheme.
+"""
+function reconstructStates3D(N,edo,HPlist,pulledindices,dirs,newcoords,geometry)
+    reconstructedSates=zeros(Int8,(length(HPlist),3,length(pulledindices)+1))
+    reconstructedSates[:,:,1]=edo
+
+
+    for l in 2:length(pulledindices)+1
+        ind=pulledindices[l-1]
+
+        if ind == 0 # Pull move did not happen.
+            reconstructedSates[:,:,l]=copy(reconstructedSates[:,:,l-1]) # State is unchanged
+
+
+        else
+            newedo=copy(reconstructedSates[:,:,l-1])
+            refedo=copy(reconstructedSates[:,:,l-1])
+            newedo[ind,:]=newcoords[l-1,:]
+
+
+            if ind == 1
+                stateconf=validConf3D(N,ind,newedo,HPlist,forwards,geometry)
+                if stateconf == false
+                    for k in (ind+1):length(HPlist)
+                        if stateconf == false
+                            np=refedo[k-1,:] # New position.
+                            newedo[k,:]=np 
+                            stateconf=validConf3D(N,k,newedo,HPlist,forwards,geometry) # Check whether the new configuration is valid.
+                        else
+                            break
+                        end
+                    end
+                end
+                reconstructedSates[:,:,l]=newedo
+
+
+
+            elseif ind == length(HPlist)
+                stateconf=validConf3D(N,ind,newedo,HPlist,backwards,geometry)
+                if stateconf == false
+                    for k in (ind-1):-1:1
+                        if stateconf == false
+                            np=refedo[k+1,:] # New position.
+                            newedo[k,:]=np 
+                            stateconf=validConf3D(N,k,newedo,HPlist,backwards,geometry) # Check whether the new configuration is valid.
+                        else
+                            break
+                        end
+                    end
+                end
+                reconstructedSates[:,:,l]=newedo
+
+
+
+            else
+                dir=dirs[l-1]
+
+                if dir == backwards
+                    stateconf=validConf3D(N,ind,newedo,HPlist,dir,geometry)
+                    if stateconf == false
+                        for k in (ind-1):-1:1
+                            if stateconf == false
+                                np=refedo[k+1,:] # New position.
+                                newedo[k,:]=np 
+                                stateconf=validConf3D(N,k,newedo,HPlist,dir,geometry) # Check whether the new configuration is valid.
+                            else
+                                break
+                            end
+                        end
+                    end
+                    reconstructedSates[:,:,l]=newedo
+
+                elseif dir == forwards
+                    stateconf=validConf3D(N,ind,newedo,HPlist,dir,geometry)
+                    if stateconf ==  false
+                        for k in (ind+1):length(HPlist)
+                            if stateconf == false
+                                np=refedo[k-1,:] # New position.
+                                newedo[k,:]=np 
+                                stateconf=validConf3D(N,k,newedo,HPlist,dir,geometry) # Check whether the new configuration is valid.
+                            else
+                                break
+                            end
+                        end
+                    end
+                    reconstructedSates[:,:,l]=newedo
+                end
+
+                
+            end
+
+        end
+
+    end
+
+    return reconstructedSates
 end

@@ -226,7 +226,7 @@ end
 
 # info=HP2Dmet(40,40000,0.2,testprotein)
 
-#testproteinT=Protein2D([[7 2];[7 3];[7 4];[7 5];[7 6];[7 7];[7 8];[7 9];[7 10];[7 11]],[1,-1,-1,1,-1,1,-1,1,-1,-1],triangular2D)
+# testproteinT=Protein2D([[7 2];[7 3];[7 4];[7 5];[7 6];[7 7];[7 8];[7 9];[7 10];[7 11]],[1,-1,-1,1,-1,1,-1,1,-1,-1],triangular2D)
 
 # infoT=HP2Dmet(20,4000,0.2,testproteinT)
 

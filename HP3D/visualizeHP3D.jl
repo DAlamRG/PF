@@ -85,7 +85,7 @@ Given a matrix encoding the aminoacids positions `edo`, the aminoacid sequence `
 ; returns a plot displaying the protein configuration.
 """
 function visHP3D(edo,HPlist,N,geometry)
-    colours=[] # Assin colours to the H and P aminoacids.
+    colours=[] # Assign colours to the H and P aminoacids.
     for i in 1:length(HPlist)
         el=HPlist[i]
         if el == 1
@@ -94,7 +94,6 @@ function visHP3D(edo,HPlist,N,geometry)
             push!(colours,"red")
         end
     end
-
 
 
     if geometry == cubic
@@ -107,11 +106,11 @@ function visHP3D(edo,HPlist,N,geometry)
         plt=scatter(fccM[:,1],fccM[:,2],fccM[:,3],color="gray",alpha=0.2,label="",markersize=7,grid=:false,xlabel="",
         ylabel="",zlabel="",title="Current protein configuration ")
         plot!(edofcc[:,1],edofcc[:,2],edofcc[:,3],lw=2,markershape=:circle,markercolor=colours ,markersize=7,color="purple",label="")
-        xlims!((minimum(edofcc[:,1]),maximum(edofcc[:,1])))
-        ylims!((minimum(edofcc[:,2]),maximum(edofcc[:,2])))
-        zlims!((minimum(edofcc[:,3]),maximum(edofcc[:,3])))
+        xlims!((minimum(edofcc[:,1])-1,maximum(edofcc[:,1])+1))
+        ylims!((minimum(edofcc[:,2])-1,maximum(edofcc[:,2])+1))
+        zlims!((minimum(edofcc[:,3])-1,maximum(edofcc[:,3])+1))
+        display(plt)
     end
-    display(plt)
 end
     
     

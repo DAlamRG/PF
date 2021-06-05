@@ -915,6 +915,7 @@ end
 
 """
     reconstructStates3D(N,edo,HPlist,pulledindices,dirs,newcoords,geometry)
+    
 Given a lattice size `N`, a matrix encoding the aminoacids initial position `edo`, an aminoacid sequence `HPlist` ,an array containing the 
 pulled indices `pulledindices`, an array containing the direction in which the chain was pulled `dirs`, a matrix containing the new positions 
 for the pulled indices `newcoords`, a geometry; returns a multidimensional array containing the states at each point of the Metropolis scheme.

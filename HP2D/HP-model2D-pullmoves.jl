@@ -139,6 +139,7 @@ end
 @enum directions::Int8 begin
         forwards=1
         backwards=2
+        nonetaken=3
     end
 # Now, the task is to write a function which determines whether a given protein sequence is valid. This function works 
 # only for the middle indices.
@@ -1281,10 +1282,7 @@ Given a 2D array size `N`, a matrix encoding the aminoacids positions `edo`, and
 the sequence of H,P aminoacids `HPlist`; chooses an index and performs a full pull move for the generated index. 
 """
 function pullMove2D(N,edo,HPlist)
-    
-    # I set up the protein within the array.
-    red=makeLattice(N,edo,HPlist)
-    
+        
     # `newedo` will contain the amino acids´ final positions.
     newedo=copy(edo)
 
@@ -1318,18 +1316,19 @@ function pullMove2D(N,edo,HPlist)
     # Type of pull move depends on the value of `m`.
     if m ≤ s1 # First monomer is moved.
         ind=1
-        singleMove2D(red,edo[ind,:],coords1[m,:]) # Move `ind`.
         newedo[ind,:]=coords1[m,:] # Record the change.
-        singleMove2D(red,edo[ind+1,:],coords2[m,:]) # Makes the move.
         newedo[ind+1,:]=coords2[m,:] # Record the change.
+        indpulled=ind # Function returns the index pulled in the move.
+        newcoord1=newedo[ind,:] # Function returns the new coordinate for the pulled index.
+        newcoord2=newedo[ind+1,:] 
+        dirpulled= forwards
+
 
         # Now I have to check whether the current configuration is valid.
         stateconf=validConf(N,ind+1,newedo,HPlist,forwards)
         for k in ind+2:length(HPlist)
             if stateconf == false
-                op=edo[k,:] # Old position.
                 np=edo[k-2,:] # New position.
-                singleMove2D(red,op,np) 
                 newedo[k,:]=np 
                 stateconf=validConf(N,k,newedo,HPlist,forwards) # Check whether the new configuration is valid.
             else
@@ -1342,18 +1341,18 @@ function pullMove2D(N,edo,HPlist)
     elseif  s2 ≤ m ≤ s3
         mp=m-(s2-1) # `mp is the position` for the moves corresponding to the final monomer in the chain.
         ind=length(HPlist)
-        singleMove2D(red,edo[ind,:],coords3[mp,:]) # Move `ind`.
         newedo[ind,:]=coords3[mp,:] # Record the change.
-        singleMove2D(red,edo[ind-1,:],coords4[mp,:]) # Makes the move.
         newedo[ind-1,:]=coords4[mp,:] # Record the change.
+        indpulled=ind # Function returns the index pulled in the move.
+        newcoord1=newedo[ind,:] # Function returns the new coordinate for the pulled index.
+        newcoord2=newedo[ind-1,:] 
+        dirpulled= backwards
 
         # Now I have to check whether the current configuration is valid.
         stateconf=validConf(N,ind-1,newedo,HPlist,backwards) 
         for k in ind:-1:3
             if stateconf == false
-                op=edo[k-2,:] # Old position.
                 np=edo[k,:] # New position.
-                singleMove2D(red,op,np) 
                 newedo[k-2,:]=np 
                 stateconf=validConf(N,k-2,newedo,HPlist,backwards) # Check whether the new configuration is valid.
             else
@@ -1365,22 +1364,22 @@ function pullMove2D(N,edo,HPlist)
     elseif s4 ≤ m ≤ s5
         mp=m-(s4-1)
         indm,ind,pos=middleInd2D(mp,matrixb)
-        singleMove2D(red,edo[indm,:],middlecoords1[ind][pos,:])
         newedo[indm,:]=middlecoords1[ind][pos,:]
+        indpulled=indm # Function returns the index pulled in the move.
+        newcoord1=newedo[indm,:] # Function returns the new coordinate for the pulled index. 
+        dirpulled= backwards
 
         if validConf(N,indm,newedo,HPlist,backwards) != true
-            singleMove2D(red,edo[indm-1,:],middlecoords2[ind][pos,:]) # Makes the move.
             newedo[indm-1,:]=middlecoords2[ind][pos,:] # Record the change.
         end
+        newcoord2=newedo[indm-1,:]
 
         # If all went well, a move has been done, now I have to check whether the current configuration is valid.
         stateconf=validConf(N,indm-1,newedo,HPlist,backwards)
         if stateconf == false
             for k in (indm-2):-1:1
                 if stateconf == false
-                    op=edo[k,:] # Old position.
                     np=edo[k+2,:] # New position.
-                    singleMove2D(red,op,np) 
                     newedo[k,:]=np 
                     stateconf=validConf(N,k,newedo,HPlist,backwards) # Check whether the new configuration is valid.
                 else
@@ -1394,22 +1393,24 @@ function pullMove2D(N,edo,HPlist)
     elseif m ≥ s6 
         mp=m-(s6-1)
         indm,ind,pos=middleInd2D(mp,matrixf)
-        singleMove2D(red,edo[indm,:],middlecoords3[ind][pos,:])
         newedo[indm,:]=middlecoords3[ind][pos,:]
+        indpulled=indm # Function returns the index pulled in the move.
+        newcoord1=newedo[indm,:] # Function returns the new coordinate for the pulled index. 
+        dirpulled= forwards
+        
 
         if validConf(N,indm,newedo,HPlist,forwards) != true
-            singleMove2D(red,edo[indm+1,:],middlecoords4[ind][pos,:]) # Makes the move.
             newedo[indm+1,:]=middlecoords4[ind][pos,:] # Record the change.
         end
+        newcoord2=newedo[indm+1,:]
+
 
         # If all went well, a move has been performed, now I have to check whether the current configuration is valid.
         stateconf=validConf(N,indm+1,newedo,HPlist,forwards)
         if stateconf ==  false
             for k in (indm+2):length(HPlist)
                 if stateconf == false
-                    op=edo[k,:] # Old position.
                     np=edo[k-2,:] # New position.
-                    singleMove2D(red,op,np) 
                     newedo[k,:]=np 
                     stateconf=validConf(N,k,newedo,HPlist,forwards) # Check whether the new configuration is valid.
                 else
@@ -1422,9 +1423,8 @@ function pullMove2D(N,edo,HPlist)
 
     end
     
-    
-    newred=makeLattice(N,newedo,HPlist)
-    return (newred,newedo,totalpull) # Returns everything neccesary to reproduce the final configuration and implement
+
+    return (newedo,totalpull,indpulled,newcoord1,newcoord2,dirpulled) # Returns everything neccesary to reproduce the final configuration and implement
     # the Metropolis algorithm.
 end
 

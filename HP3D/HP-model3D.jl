@@ -138,7 +138,7 @@ function HP3Dmet(N,nums,T,protein)
 
     pulledindices=zeros(Int8,ns) # Stores the moved indices. If no index is moved, the value is zero.
     newcoords=zeros(Int8,(ns,3)) # Stores the new coordinate for the pulled index. If the configuration stays the same, the new coordinate is just the original position.
-    dirs=directions[]
+    dirs=directions[] # Store the direction in which the chain was pulled. If no pull move was peroformed, the direction is `nonetaken`.
     
     
 
@@ -152,7 +152,6 @@ function HP3Dmet(N,nums,T,protein)
         newenergy=energy(N,newedo,HPlist,geometry) # Compute the energy after the pull move.
         
         ΔH=newenergy-enstates[l-1] # Compute the energy difference.
-        
         
 
         if ΔH ≤ 0 # We accept the configuration change.

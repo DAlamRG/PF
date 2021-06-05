@@ -1,8 +1,8 @@
 # This file contains the code neccesary to perform the pull-moves in a triangular lattice.
 
 
-include("/Users/pedroruiz/Desktop/Diego/PF/HP2Dsquare/visualizeHP2D.jl")
-include("/Users/pedroruiz/Desktop/Diego/PF/HP2Dsquare/HP-model2D-pullmoves.jl")
+
+include("./HP-model2D-pullmoves.jl")
 using LinearAlgebra
 
 
@@ -842,9 +842,6 @@ the sequence of H,P aminoacids `HPlist`; chooses an index and performs a full pu
 """
 function pullMove2DΔ(N,edo,HPlist)  
     
-    # I set up the protein within the array.
-    red=makeLattice(N,edo,HPlist)
-    
     # `newedo` will contain the amino acids´ final positions.
     newedo=copy(edo)
 
@@ -878,17 +875,17 @@ function pullMove2DΔ(N,edo,HPlist)
     # Type of pull move depends on the value of `m`.
     if m ≤ s1 # First monomer is moved.
         ind=1
-        singleMove2D(red,edo[ind,:],coords1[m,:]) # Move `ind`.
         newedo[ind,:]=coords1[m,:] # Record the change.
+        indpulled=ind # Function returns the index pulled in the move.
+        newcoord=newedo[ind,:] # Function returns the new coordinate for the pulled index.
+        dirpulled= forwards
 
         # If all went well, a move has been done, now I have to check whether the current configuration is valid.
         stateconf=validConf2DGeneral(N,ind,newedo,HPlist,forwards,triangular2D)
         if stateconf == false
             for k in (ind+1):length(HPlist)
                 if stateconf == false
-                    op=edo[k,:] # Old position.
                     np=edo[k-1,:] # New position.
-                    singleMove2D(red,op,np) 
                     newedo[k,:]=np 
                     stateconf=validConf2DGeneral(N,k,newedo,HPlist,forwards,triangular2D) # Check whether the new configuration is valid.
                 else
@@ -904,17 +901,17 @@ function pullMove2DΔ(N,edo,HPlist)
     elseif  s2 ≤ m ≤ s3
         mp=m-(s2-1) # `mp is the position` for the moves corresponding to the final monomer in the chain.
         ind=length(HPlist)
-        singleMove2D(red,edo[ind,:],coords3[mp,:]) # Move `ind`.
         newedo[ind,:]=coords3[mp,:] # Record the change.
+        indpulled=ind
+        newcoord=newedo[ind,:]
+        dirpulled= backwards
 
         # If all went well, a move has been done, now I have to check whether the current configuration is valid.
         stateconf=validConf2DGeneral(N,ind,newedo,HPlist,backwards,triangular2D)
         if stateconf == false
             for k in (ind-1):-1:1
                 if stateconf == false
-                    op=edo[k,:] # Old position.
                     np=edo[k+1,:] # New position.
-                    singleMove2D(red,op,np) 
                     newedo[k,:]=np 
                     stateconf=validConf2DGeneral(N,k,newedo,HPlist,backwards,triangular2D) # Check whether the new configuration is valid.
                 else
@@ -930,17 +927,17 @@ function pullMove2DΔ(N,edo,HPlist)
     elseif s4 ≤ m ≤ s5
         mp=m-(s4-1)
         indm,ind,pos=middleInd2D(mp,matrixb)
-        singleMove2D(red,edo[indm,:],middlecoords1[ind][pos,:])
         newedo[indm,:]=middlecoords1[ind][pos,:]
+        indpulled=indm
+        newcoord=newedo[indm,:]
+        dirpulled= backwards
 
         # If all went well, a move has been done, now I have to check whether the current configuration is valid.
         stateconf=validConf2DGeneral(N,indm,newedo,HPlist,backwards,triangular2D)
         if stateconf == false
             for k in (indm-1):-1:1
                 if stateconf == false
-                    op=edo[k,:] # Old position.
                     np=edo[k+1,:] # New position.
-                    singleMove2D(red,op,np) 
                     newedo[k,:]=np 
                     stateconf=validConf2DGeneral(N,k,newedo,HPlist,backwards,triangular2D) # Check whether the new configuration is valid.
                 else
@@ -954,17 +951,17 @@ function pullMove2DΔ(N,edo,HPlist)
     elseif m ≥ s6 
         mp=m-(s6-1)
         indm,ind,pos=middleInd2D(mp,matrixf)
-        singleMove2D(red,edo[indm,:],middlecoords3[ind][pos,:])
         newedo[indm,:]=middlecoords3[ind][pos,:]
+        indpulled=indm
+        newcoord=newedo[indm,:]
+        dirpulled= forwards
 
         # If all went well, a move has been performed, now I have to check whether the current configuration is valid.
         stateconf=validConf2DGeneral(N,indm,newedo,HPlist,forwards,triangular2D)
         if stateconf ==  false
             for k in (indm+1):length(HPlist)
                 if stateconf == false
-                    op=edo[k,:] # Old position.
                     np=edo[k-1,:] # New position.
-                    singleMove2D(red,op,np) 
                     newedo[k,:]=np 
                     stateconf=validConf2DGeneral(N,k,newedo,HPlist,forwards,triangular2D) # Check whether the new configuration is valid.
                 else
@@ -977,11 +974,12 @@ function pullMove2DΔ(N,edo,HPlist)
 
     end
     
-    newred=makeLattice(N,newedo,HPlist)
-    
-    return (newred,newedo,totalpull) # Returns everything neccesary to reproduce the final configuration and implement
+    return (newedo,totalpull,indpulled,newcoord,dirpulled) # Returns everything neccesary to reproduce the final configuration and implement
     # the Metropolis algorithm.
 end
+
+
+
 
 
 
@@ -1003,12 +1001,12 @@ the generated index.
 """
 function pullMove2DGeneral(N,edo,HPlist,geometry) 
     if geometry == square2D
-        newred,newedo,totalpull=pullMove2D(N,edo,HPlist)
+        newedo,totalpull,indpulled,newcoord1,newcoord2,dirpulled=pullMove2D(N,edo,HPlist)
+        return (newedo,totalpull,indpulled,newcoord1,newcoord2,dirpulled)
     elseif geometry == triangular2D
-        newred,newedo,totalpull=pullMove2DΔ(N,edo,HPlist)
+        newedo,totalpull,indpulled,newcoord,dirpulled=pullMove2DΔ(N,edo,HPlist)
+        return (newedo,totalpull,indpulled,newcoord,dirpulled)
     end
-
-    return (newred,newedo,totalpull)
 end
 
 
@@ -1022,6 +1020,201 @@ end
 
 
 
-# infot=pullMove2DΔ(12,[[7 3];[6 3];[7 4];[8 5];[7 5];[7 6];[6 5];[5 5];[5 4];[6 4]],[1,-1,-1,1,-1,1,-1,1,-1,-1])
+"""
+    reconstructStates2D(N,edo,HPlist,pulledindices,dirs,newcoords,geometry)
+
+Given a lattice size `N`, a matrix encoding the aminoacids initial position `edo`, an aminoacid sequence `HPlist` ,an array containing the 
+pulled indices `pulledindices`, an array containing the direction in which the chain was pulled `dirs`, a couple of matrices containing the new positions 
+for the pulled indices `newcoords`, a geometry; returns a multidimensional array containing the states at each point of the Metropolis scheme.
+"""
+function reconstructStates2D(N,edo,HPlist,pulledindices,dirs,newcoords,geometry)
+    reconstructedSates=zeros(Int8,(length(HPlist),2,length(pulledindices)+1))
+    reconstructedSates[:,:,1]=edo
 
 
+    if geometry == triangular2D
+        for l in 2:length(pulledindices)+1
+            ind=pulledindices[l-1]
+    
+            if ind == 0 # Pull move did not happen.
+                reconstructedSates[:,:,l]=copy(reconstructedSates[:,:,l-1]) # State is unchanged
+    
+    
+            else
+                newedo=copy(reconstructedSates[:,:,l-1])
+                refedo=copy(reconstructedSates[:,:,l-1])
+                newedo[ind,:]=newcoords[l-1,:]
+    
+    
+                if ind == 1
+                    stateconf=validConf2DGeneral(N,ind,newedo,HPlist,forwards,geometry)
+                    if stateconf == false
+                        for k in (ind+1):length(HPlist)
+                            if stateconf == false
+                                np=refedo[k-1,:] # New position.
+                                newedo[k,:]=np 
+                                stateconf=validConf2DGeneral(N,k,newedo,HPlist,forwards,geometry) # Check whether the new configuration is valid.
+                            else
+                                break
+                            end
+                        end
+                    end
+                    reconstructedSates[:,:,l]=newedo
+    
+    
+    
+                elseif ind == length(HPlist)
+                    stateconf=validConf2DGeneral(N,ind,newedo,HPlist,backwards,geometry)
+                    if stateconf == false
+                        for k in (ind-1):-1:1
+                            if stateconf == false
+                                np=refedo[k+1,:] # New position.
+                                newedo[k,:]=np 
+                                stateconf=validConf2DGeneral(N,k,newedo,HPlist,backwards,geometry) # Check whether the new configuration is valid.
+                            else
+                                break
+                            end
+                        end
+                    end
+                    reconstructedSates[:,:,l]=newedo
+    
+    
+    
+                else
+                    dir=dirs[l-1]
+    
+                    if dir == backwards
+                        stateconf=validConf2DGeneral(N,ind,newedo,HPlist,dir,geometry)
+                        if stateconf == false
+                            for k in (ind-1):-1:1
+                                if stateconf == false
+                                    np=refedo[k+1,:] # New position.
+                                    newedo[k,:]=np 
+                                    stateconf=validConf2DGeneral(N,k,newedo,HPlist,dir,geometry) # Check whether the new configuration is valid.
+                                else
+                                    break
+                                end
+                            end
+                        end
+                        reconstructedSates[:,:,l]=newedo
+    
+                    elseif dir == forwards
+                        stateconf=validConf2DGeneral(N,ind,newedo,HPlist,dir,geometry)
+                        if stateconf ==  false
+                            for k in (ind+1):length(HPlist)
+                                if stateconf == false
+                                    np=refedo[k-1,:] # New position.
+                                    newedo[k,:]=np 
+                                    stateconf=validConf2DGeneral(N,k,newedo,HPlist,dir,geometry) # Check whether the new configuration is valid.
+                                else
+                                    break
+                                end
+                            end
+                        end
+                        reconstructedSates[:,:,l]=newedo
+                    end
+    
+                    
+                end
+    
+            end
+    
+        end
+
+
+
+
+    elseif geometry == square2D
+        for l in 2:length(pulledindices)+1
+            ind=pulledindices[l-1]
+    
+            if ind == 0 # Pull move did not happen.
+                reconstructedSates[:,:,l]=copy(reconstructedSates[:,:,l-1]) # State is unchanged
+    
+    
+            else
+                newedo=copy(reconstructedSates[:,:,l-1])
+                refedo=copy(reconstructedSates[:,:,l-1])
+                newedo[ind,:]=newcoords[1][l-1,:]
+    
+    
+                if ind == 1
+                    newedo[ind+1,:]=newcoords[2][l-1,:]
+                    stateconf=validConf2DGeneral(N,ind+1,newedo,HPlist,forwards,geometry)
+                    if stateconf == false
+                        for k in (ind+2):length(HPlist)
+                            if stateconf == false
+                                np=refedo[k-2,:] # New position.
+                                newedo[k,:]=np 
+                                stateconf=validConf2DGeneral(N,k,newedo,HPlist,forwards,geometry) # Check whether the new configuration is valid.
+                            else
+                                break
+                            end
+                        end
+                    end
+                    reconstructedSates[:,:,l]=newedo
+    
+    
+    
+                elseif ind == length(HPlist)
+                    newedo[ind-1,:]=newcoords[2][l-1,:]
+                    stateconf=validConf2DGeneral(N,ind-1,newedo,HPlist,backwards,geometry)
+                    if stateconf == false
+                        for k in (ind-2):-1:1
+                            if stateconf == false
+                                np=refedo[k+2,:] # New position.
+                                newedo[k,:]=np 
+                                stateconf=validConf2DGeneral(N,k,newedo,HPlist,backwards,geometry) # Check whether the new configuration is valid.
+                            else
+                                break
+                            end
+                        end
+                    end
+                    reconstructedSates[:,:,l]=newedo
+    
+    
+    
+                else
+                    dir=dirs[l-1]
+                    if dir == backwards
+                        newedo[ind-1,:]=newcoords[2][l-1,:]
+                        stateconf=validConf2DGeneral(N,ind-1,newedo,HPlist,dir,geometry)
+                        if stateconf == false
+                            for k in (ind-2):-1:1
+                                if stateconf == false
+                                    np=refedo[k+2,:] # New position.
+                                    newedo[k,:]=np 
+                                    stateconf=validConf2DGeneral(N,k,newedo,HPlist,dir,geometry) # Check whether the new configuration is valid.
+                                else
+                                    break
+                                end
+                            end
+                        end
+                        reconstructedSates[:,:,l]=newedo
+    
+                    elseif dir == forwards
+                        newedo[ind+1,:]=newcoords[2][l-1,:]
+                        stateconf=validConf2DGeneral(N,ind+1,newedo,HPlist,dir,geometry)
+                        if stateconf ==  false
+                            for k in (ind+2):length(HPlist)
+                                if stateconf == false
+                                    np=refedo[k-2,:] # New position.
+                                    newedo[k,:]=np 
+                                    stateconf=validConf2DGeneral(N,k,newedo,HPlist,dir,geometry) # Check whether the new configuration is valid.
+                                else
+                                    break
+                                end
+                            end
+                        end
+                        reconstructedSates[:,:,l]=newedo
+                    end
+    
+                end
+    
+            end
+    
+        end
+    end
+
+    return reconstructedSates
+end

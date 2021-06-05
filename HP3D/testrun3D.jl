@@ -11,6 +11,5 @@ infofcc=HP3Dmet(20,1000,0.3,testProteinfcc) # Employ metropolis to simulate the 
 
 recon=reconstructStates3D(20,testProteinfcc.edo,testProteinfcc.HPlist,infofcc[2],infofcc[3],infofcc[4],testProteinfcc.geometry) # Reconstruct the visited states during the simulation.
 
-display(infofcc[1])
 
 visHP3D(recon[:,:,end],testProteinfcc.HPlist,20,testProteinfcc.geometry)

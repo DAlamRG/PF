@@ -1,7 +1,10 @@
 
 using StatsBase
 using Statistics
+using DelimitedFiles
+
 # I try my hand at the Ising model using the Wang-Landau algorithm.
+# Pg 427
 
 
 
@@ -66,7 +69,7 @@ function energy(edo)
     # Iterate over every single place in the lattice. Employ periodic indices.
     for i in 1:N, j in 1:N
         sind=periodicArr2D(edo,[i,j]) # Stores the spin of the lattice site.
-        nns=[periodicArr2D(edo,[i-1,j]),periodicArr2D(edo,[i,j+1]),periodicArr2D(edo,[i+1,j]),periodicArr2D(edo,[i,-1j])] # Stores the spins for the 
+        nns=[periodicArr2D(edo,[i-1,j]),periodicArr2D(edo,[i,j+1]),periodicArr2D(edo,[i+1,j]),periodicArr2D(edo,[i,j-1])] # Stores the spins for the 
         # nearest neighbors to the considered spin site.
         localen=sind*(sum(nns)) # COmpute the contribution to the energy coming from the spin located at `[i,j]`.
         en=en+localen
@@ -95,9 +98,9 @@ Given a 2D array `edo` and a position `ind`; returns the sum of the nearest neig
 """
 function nearestneighborSum(edo,inds)
 
-    s=0 # Stores the value of the energy
+    s=0 # Stores the value of the sum.
     i,j=inds
-    nns=[periodicArr2D(edo,[i-1,j]),periodicArr2D(edo,[i,j+1]),periodicArr2D(edo,[i+1,j]),periodicArr2D(edo,[i,-1j])] # Stores the spins for the nearest neighbors.
+    nns=[periodicArr2D(edo,[i-1,j]),periodicArr2D(edo,[i,j+1]),periodicArr2D(edo,[i+1,j]),periodicArr2D(edo,[i,j-1])] # Stores the spins for the nearest neighbors.
     s=sum(nns)
     return s
 end
@@ -144,14 +147,15 @@ Given a dictionary `localenergies` containing the number of times each energy wa
 lowest counted energy is 80 % of the average, return a boolean value `true`.
 """
 function histCondtion(localenergies)
-    val = true
+    val = false
+    
     ocurrences=values(localenergies)
-    m1=minimum(ocurrences)
-    μ=mean(ocurrences)
-    μcomp=(0.5)*μ
+    hmin=minimum(ocurrences)
+    hmax=maximum(ocurrences)
+    c=(hmax-hmin)/(hmax+hmin)
 
-    if m1 ≤ μcomp
-        val = false
+    if c < 0.2
+        val = true
     end
     return val
 end
@@ -167,36 +171,35 @@ end
 
 
 
+
+
+
 """
-    ising2DWL(edoin)
+    ising2DWL(edoin,numlim2)
+Given an initial configuration `edo` and a limit number of iterations `numlim2`; returns a dictionary whose keys are the 
+visited energies, and it´s values are the logarithms of the energy densities.
 """
-function ising2DWL(edo)
+function ising2DWL(edo,numlim2)
 
     N=size(edo)[1]
     mcsweep=N^2 # Monte Carlo sweep/step size.
-    numlim1=10^(4) # Limits the number of times the histogram is updated. Avoids non-ending algorithm.
-    numlim2=10^(5)
+    sizeSyst=2*mcsweep
     
-    lnf=1 # Initial value of updating value `f`.
-    enlim=Int(2*(N^2)) # Upper energy limit for the N^2 spin Ising system.
-    enDensityDict=Dict(i => log(exp(1)) for i in -enlim:enlim) # Dictionary for the energy densities. Keys are all the possible energy values
+    lnf=1 # Initial value of updating value `log(f)`.
+    enDensityDict=Dict{Int64,Float64}(i => 0 for i in range(-sizeSyst,stop=sizeSyst,step=4)) # Dictionary for the energy densities. Keys are all the possible energy values
     # for the system. Values are the energy density (actually log(g(Eᵢ)) ).
 
-
-
     cont1=1
-    while (cont1 ≤ numlim1) && (lnf ≥ 10^(-4)) # Stop when modification factor is small enough.
+    for l in 1:27
         cont1=cont1+1 # Update the counter.
         println("cont1= ",cont1)
-        localenergies=Dict(i => 0 for i in -enlim:enlim) # Stores the number of times each energy is visted during the current iteration.
+        localenergies=Dict{Int64,Int64}() # Stores the number of times each energy is visted during the current iteration.
         
         hCond=false
         cont2=1
         while (cont2 ≤ numlim2) && (hCond == false)
-            cont2=cont2+1
-            
 
-            for k in 1:(100*mcsweep) # Perform 10^3 Monte Carlo sweeps.
+            for k in 1:(30*mcsweep) # Perform 10^3 Monte Carlo sweeps.
                 
                 e1=Int(energy(edo)) # Initial energy.
                 # Generate position to flip.
@@ -204,14 +207,30 @@ function ising2DWL(edo)
                 jflip=rand(1:N)
                 difE=energyDif(edo,[iflip,jflip]) # Compute the energy difference.
                 e2=Int(e1+difE) # Energy of the new state
+
+                # There´s a chance that the computed energies are not yet in the dictionary. In that case, we add them.
+                if e1 ∉ keys(enDensityDict)
+                    enDensityDict[e1]=0
+                end
+                if e2 ∉ keys(enDensityDict)
+                    enDensityDict[e2]=0
+                end
+
+                if e1 ∉ keys(localenergies)
+                    localenergies[e1]=0
+                end
+                if e2 ∉ keys(localenergies)
+                    localenergies[e2]=0
+                end
     
                 # Next, we need to obtain the density of states for the energies.
                 lg1=enDensityDict[e1]
                 lg2=enDensityDict[e2]
     
-                r=rand(0:1) # Generate a random number.
-                if r ≤ exp(lg1-lg2) # Accept the flip.
-                    edo[iflip,jflip]=-edo[iflip,jflip] # Flip the spin. 
+                r=rand() # Generate a random number.
+                pμν=exp(lg1-lg2)
+                if r ≤ pμν # Accept the flip.
+                    edo[iflip,jflip]=(-1)*edo[iflip,jflip] # Flip the spin. 
                     enDensityDict[e2]=lg2+lnf # Update the density of states for the new energy (the log actually).
                     localenergies[e2]=localenergies[e2]+1 # Update the "histogram".
     
@@ -223,15 +242,17 @@ function ising2DWL(edo)
             end
 
             hCond=histCondtion(localenergies)
+            if hCond == true 
+                println("hCond= ",hCond)
+            end
+
+            cont2=cont2+1
         end
-
-        display(localenergies)
-            
+         
         # After the first `while` is completed, we need to change the value of  the modifying constant `f`.
-        lnf= (1/2)*lnf # Update `f`.
-        localenergies=Dict(i => 0 for i in -enlim:enlim) # Reset histogram.
+        lnf= (lnf/2) # Update `f`.
     end
-
+    
     return enDensityDict
 end
 
@@ -244,14 +265,19 @@ end
 
 
 
+
+
+
+
 """
-    sExp(E,T)
-Given a temperature `T` and an energy `E`; returns e^{-βE}.
+    sExp(E,T,lnge,λ)
+Given a temperature `T`, an energy `E`, the logarithm of the enegy density `lnge` and a number `λ`; returns e^{ln(g(e))-βE}.
 """
-function sExp(E,T)
+function sExp(E,T,lnge,λ)
     β=1/T
-    t=-(E*β)
-    return exp(t)
+    t=(E*β)
+    res=exp(lnge-t-λ)
+    return res
 end
     
 
@@ -263,35 +289,88 @@ end
 
 
 
-"""
-    ising2DWL_U(edoin,ti,tf,l)
- Given an initial state (2D array) `edoin`, an initial (final) temperature `ti` (`tf`) and a length for the temperature array `l`; 
- returns an array containing the internal energy per spin for each of the temperatures in the range.    
-"""
-function ising2DWL_U(edoin,ti,tf,l)
 
-    N=size(edoin)[1]
-    temps=range(ti,stop=tf,length=l)
+"""
+    determineλ(lngE,T)
+Given a dictionary `lngE` whose keys(values) are energies(log of energy densities), and a temperature; returns the largest value
+λ of the differences between energy density `ln(g(E))` and `βE`
+"""
+function determineλ(lngE,T)
+    β=1/T
+    difs=Float64[]
+    for el in lngE
+        e,lnge=el
+        dif=lnge-(β*e)
+        push!(difs,dif)
+    end
+    λ=maximum(difs)
+    return λ
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+    ising2DWL_UCFS(edoin,ti,tf,l,numlim2)
+ Given an initial state (2D array) `edoin`, an initial (final) temperature `ti` (`tf`), a length for the temperature array `l`
+ and a limit number of iterations `numlim2`; returns an array containing the internal energy per spin for each of the 
+ temperatures in the range.    
+"""
+function ising2DWL_UCFS(edoin,ti,tf,l,numlim2)
+
+    N=size(edoin)[1] # N^2 is the total number of spins.
+    temps=range(ti,stop=tf,length=l) 
     us=ones(Float64,l) # This array will contain the internal energy per spin for each of the temperatures in `temps`.
+    cs=ones(Float64,l) # 
+    Fs=ones(Float64,l)
+    Ss=ones(Float64,l)
 
-    lngE=ising2DWL(edoin) # Compute the natural logarithm of the energy densities.
+    lngE=ising2DWL(edoin,numlim2) # Compute the natural logarithm of the energy densities.
 
     for i in 1:length(temps)
         T=temps[i]
-        s1=0
-        s2=0
-        for el in lngE
-            E,lnge=el # Extract the energy and natural logarithm of the energy density.
-            ge=exp(lnge) # Compute the energy density corresponding to the enegy `E`.
-            common=sExp(E,T)*ge
-            s1=s1+(E*common)
-            s2=s2+common
+        𝚬=0 # Average energy.
+        𝚬²=0 # AVerage of the squared energy.
+        𝚭=0 # Partition function, normalizes the average energy.
+        λ=determineλ(lngE,T)
+        for element in lngE
+            e,lnge=element # Extract the energy and natural logarithm of the energy density.
+            z=sExp(e,T,lnge,λ)
+            𝚬=𝚬+(e*z)
+            𝚬²=𝚬²+(e^2)*z
+            𝚭=𝚭+z
         end
-        uT=(s1/s2) # INternal energy for the given temperature.
+        
+        uT=(𝚬/𝚭) # Internal energy for the given temperature.
+        cT=(𝚬²-(𝚬^2))/(T^2) 
+        fT=-T*log(𝚭)
+        entropyS=(uT-fT)/T
+        
         us[i]=uT/(N^2) # Energy per spin.
+        cs[i]=cT/(N^2) # Specific heat per spin.
+        Fs[i]=fT/(N^2)
+        Ss[i]=entropyS/(N^2)
     end
 
-    return us
+    infoM=ones(Float64,(l,5))
+    infoM[:,1]=temps
+    infoM[:,2]=us
+    infoM[:,3]=cs
+    infoM[:,4]=Fs
+    infoM[:,5]=Ss
+
+    return (infoM,lngE)
 end
 
 
@@ -301,6 +380,13 @@ end
 
 # Next, do a little trial run.
 
-testedo=Int64[[1 -1 ];[-1 1]]
+testedo=rand([-1,1],(16,16))
+
+res=ising2DWL_UCFS(testedo,0,5,28,130)
+
+writedlm("/Users/pedroruiz/Desktop/Diego/PF/Data/WLN16",res[1])
+
+writedlm("/Users/pedroruiz/Desktop/Diego/PF/Data/WLlngE16",res[2])
+
 
 

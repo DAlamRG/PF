@@ -198,7 +198,23 @@ end
 
 
 
- 
+
+
+
+
+
+
+ # Next, I write a function which performs multiple simulations over an array of temperatures.
+
+
+
+
+
+
+
+
+
+
 
 
 

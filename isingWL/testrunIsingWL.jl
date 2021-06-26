@@ -209,7 +209,7 @@ end
 
 #Load the data. The first column are the temperatures, the second are the energies, the third the specific heats, the fourth the free energies,
 # and the third are the entropies.
-dataWL=readdlm("/Users/pedroruiz/Desktop/Diego/PF/Data/WLN16")
+dataWL=readdlm("/Users/pedroruiz/Desktop/Diego/PF/Data/WLN10")
 
 
 

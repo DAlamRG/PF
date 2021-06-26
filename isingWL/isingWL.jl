@@ -382,11 +382,11 @@ end
 
 testedo=rand([-1,1],(16,16))
 
-res=ising2DWL_UCFS(testedo,0,5,28,130)
+res=ising2DWL_UCFS(testedo,0.01,5,28,100)
 
-writedlm("/Users/pedroruiz/Desktop/Diego/PF/Data/WLN16",res[1])
+writedlm("/Users/pedroruiz/Desktop/Diego/PF/Data/WLN10",res[1])
 
-writedlm("/Users/pedroruiz/Desktop/Diego/PF/Data/WLlngE16",res[2])
+writedlm("/Users/pedroruiz/Desktop/Diego/PF/Data/WLlngE10",res[2])
 
 
 

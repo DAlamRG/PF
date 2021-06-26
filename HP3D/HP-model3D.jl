@@ -1,4 +1,5 @@
 using Plots: length
+using DelimitedFiles
 # First attempt at programming the Metropolis algorithm for the HP model.
 
 include("/Users/pedroruiz/Desktop/Diego/PF/HP3D/HP-model3D-pullmoves.jl")
@@ -217,43 +218,56 @@ end
 
  # Next, I write a function which performs multiple simulations over an array of temperatures.
 """
-    mainHP3Dmet(N,nums,ti,tf,nTs,protein)
+    mainHP3Dmet(N,nums,ti,tf,nTs,protein,name)
 Given a 3D array size `N`, a number of Monte-Carlo sweeps `nums` per temperature, an initial(final) temperature `ti(tf)`, the number of 
 temperatures to be visited `nTs`, and a structure `protein` encoding the protein´s configuration; returns the final configuration and 
 the visited energies after performing a simulation using the Metropolis-Hastings algorithm.
 """
-function mainHP3Dmet(N,nums,ti,tf,nTs,protein)
+function mainHP3Dmet(N,nums,ti,tf,nTs,protein,name)
 
     temperatures=range(ti,stop=tf,length=nTs) # Decalre a range of temperatures to be visited.
 
-    # Next, I need three arrays which will store all of the `pulledindices,dirs,newcoords`for all of the temperatures. 
-    pulledindicesT=Vector{Int8}[] 
-    dirsT=Vector{directions}[]
-    newcoordsT=Matrix{Int64}[] 
+    # Create the directory which will contain the dat collected trough the simulation.
+    pathstring="/Users/pedroruiz/Desktop/Diego/PF/HP3D/output3D/"
+    pathname=pathstring*name
+    mkdir(pathname)
 
-    # Fill the first entry of the above arrays.
+    # Perform the first simulation.
     datatemp1=HP3Dmet(N,nums,temperatures[end],protein)
-    push!(pulledindicesT,datatemp1[1])
-    push!(dirsT,datatemp1[2])
-    push!(newcoordsT,datatemp1[3])
+    pulledindicesT=datatemp1[1] # The next three variables will be used to perform subsequent simulations.
+    dirsT=datatemp1[2]
+    newcoordsT=datatemp1[3]
+    laststate=reconstructStates3D(N,protein.edo,protein.HPlist,pulledindicesT,dirsT,newcoordsT,protein.geometry)[:,:,end]
 
-    laststate=reconstructStates3D(N,protein.edo,protein.HPlist,pulledindicesT[1],dirsT[1],newcoordsT[1],protein.geometry)[:,:,end]
 
+    # Store the output generated in the first simulation.
+    writedlm(pathname*"/temperatures",temperatures,',')
+    writedlm(pathname*"/1_1",pulledindicesT,',')
+    #writedlm(pathname*"/1_2",dirsT)
+    writedlm(pathname*"/1_3",newcoordsT,',')
 
 
     # For each of the remaining temperatures, employ the Metropolis-Hastings algorithm to store the information about the
     # visited configurations at the current temperature.
     for k in 2:length(temperatures)
         temp=reverse(temperatures)[end-(k-1)] # temperature at which the simulation is performed
-        proteintemp=Protein(laststate,protein.HPlist,protein.geometry) # Protein structure for the simulation.
-        pulledindices,dirs,newcoords=HP3Dmet(N,nums,temp,proteintemp)  # Perfomr the simulation.
-        push!(pulledindicesT,pulledindices) # Record the results.
-        push!(dirsT,dirs)
-        push!(newcoordsT,newcoords)
-        laststate=reconstructStates3D(N,laststate,protein.HPlist,pulledindicesT[k],dirsT[k],newcoordsT[k],protein.geometry)[:,:,end] # Reconstruct the last configuration from the previous temperature.
+        proteinaux=Protein(laststate,protein.HPlist,protein.geometry) # Protein structure for the simulation.
+        pulledindices,dirs,newcoords=HP3Dmet(N,nums,temp,proteinaux)  # Perfom the simulation.
+        
+        pulledindicesT=pulledindices # The next three variables will be used to perform subsequent simulations.
+        dirsT=dirs
+        newcoordsT=newcoords
+        
+        # Store the output generated in the first simulation.
+        st="/"*string(k)
+        writedlm(pathname*st*"_1",pulledindicesT,',')
+        #writedlm(pathname*"/$k_2",dirsT,',')
+        writedlm(pathname*st*"_2",newcoordsT,',')
+        
+        laststate=reconstructStates3D(N,laststate,protein.HPlist,pulledindicesT,dirsT,newcoordsT,protein.geometry)[:,:,end] 
     end
 
-    return (pulledindicesT,newcoordsT,dirsT,laststate)
+    println("Simulation succesfully completed")
 end
 
 

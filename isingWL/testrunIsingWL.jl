@@ -1,10 +1,11 @@
 using Base: Int64
 using DelimitedFiles
-
-# Here I test the WL algorithm. PLot the internal energy per spin.
-
 using Plots
 gr()
+
+# Here I test the WL algorithm. PLot the internal energy per spin.
+include("/Users/pedroruiz/Desktop/Diego/PF/isingWL/isingWL.jl")
+
 
 
 
@@ -120,16 +121,16 @@ end
 
 
 """
-    enSpinIsingWL(us)
-Given an array of simulated internal energies per spin `us`; plots the given data along with the analytical solution over the temperature
-range T∈[0,5]. The transition should be located around T=2.3.
+    enSpinIsingWL(us,temps)
+Given an array of simulated internal energies per spin `us` and the corresponding temperatures `temps`; plots the given data 
+along with the analytical solution over the temperaturerange T∈[0,5]. The transition should be located around T=2.3.
 """
-function enSpinIsingWL(us)
+function enSpinIsingWL(us,temps)
 
     tempsplt=range(0,stop=5,length=201)
     usplt=Float64[enspin(temp,1) for temp in tempsplt]
 
-    plt=scatter(range(0,stop=5,length=length(us)),us,ms=5,color="green",xlabel="T",ylabel="u(T)",label="WL",title="WL for Ising model",alpha=0.7,legend=:topleft)
+    plt=scatter(temps,us,ms=5,color="green",xlabel="T",ylabel="u(T)",label="WL",title="WL for Ising model",alpha=0.7,legend=:topleft)
     plot!(tempsplt,usplt,label="Analytic",color="gray",alpha=0.7,lw=2)
 
     return plt
@@ -144,16 +145,16 @@ end
 
 
 """
-    heatSpinIsingWL(cs)
-Given an array of simulated heat capacities per spin `us`; plots the given data along with the analytical solution over the temperature
-range T∈[0,5]. The transition should be located around T=2.3.
+    heatSpinIsingWL(cs,temps)
+Given an array of simulated heat capacities per spin `us` and the corresponding temperatures `temps`; plots the given data 
+along with the analytical solution over the temperature range T∈[0,5]. The transition should be located around T=2.3.
 """
-function heatSpinIsingWL(cs)
+function heatSpinIsingWL(cs,temps)
 
     tempsplt=range(0,stop=5,length=201)
     csplt=Float64[capspin(temp,1) for temp in tempsplt]
 
-    plt=scatter(range(0,stop=5,length=length(cs)),abs.(cs),ms=5,color="green",xlabel="T",ylabel="c(T)",label="WL",title="WL for Ising model",alpha=0.7,legend=:topleft)
+    plt=scatter(temps,abs.(cs),ms=5,color="green",xlabel="T",ylabel="c(T)",label="WL",title="WL for Ising model",alpha=0.7,legend=:topleft)
     plot!(tempsplt,csplt,label="Analytic",color="gray",alpha=0.7,lw=2)
 
     return plt
@@ -169,13 +170,13 @@ end
 
 
 """
-    freeEnIsingWL(fs)
-Given an array of simulated free energies per spin `fs`; plots the given data over the temperature
+    freeEnIsingWL(fs,temps)
+Given an array of simulated free energies per spin `fs` and the corresponding temperatures `temps`; plots the given data over the temperature
 range T∈[0,5]. The transition should be located around T=2.3.
 """
-function freeEnIsingWL(fs)
+function freeEnIsingWL(fs,temps)
 
-    plt=scatter(range(0,stop=5,length=length(fs)),fs,ms=5,color="green",xlabel="T",ylabel="f(T)",label="WL",title="WL for Ising model",alpha=0.7,legend=:topleft)
+    plt=scatter(temps,fs,ms=5,color="green",xlabel="T",ylabel="f(T)",label="WL",title="WL for Ising model",alpha=0.7,legend=:topleft)
 
     return plt
 end
@@ -192,25 +193,114 @@ end
 
 
 """
-    entIsingWL(Ss)
-Given an array of simulated entropies per spin `Ss`; plots the given data over the temperature
+    entIsingWL(Ss,temps)
+Given an array of simulated entropies per spin `Ss` and the corresponding temperatures `temps`; plots the given data over the temperature
 range T∈[0,5]. The transition should be located around T=2.3.
 """
-function entIsingWL(Ss)
+function entIsingWL(Ss,temps)
 
-    plt=scatter(range(0,stop=5,length=length(Ss)),Ss,ms=5,color="green",xlabel="T",ylabel="s(T)",label="WL",title="WL for Ising model",alpha=0.7,legend=:topleft)
+    plt=scatter(temps,Ss,ms=5,color="green",xlabel="T",ylabel="s(T)",label="WL",title="WL for Ising model",alpha=0.7,legend=:topleft)
 
     return plt
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+    ising2D_thermo(lngE,ti,tf,l,N)
+ Given a matrix containing the enegy densities `lngE`, an initial (final) temperature `ti` (`tf`), a length for the temperature array `l`,
+ and a lattice size `N`; returns a matrix containing the thermodynamic variables´ values at each desired temperature.    
+"""
+function ising2D_thermo(lngE,ti,tf,l,N)
+
+    temps=range(ti,stop=tf,length=l) 
+    us=ones(Float64,l) # This array will contain the internal energy per spin for each of the temperatures in `temps`.
+    cs=ones(Float64,l) # 
+    Fs=ones(Float64,l)
+    Ss=ones(Float64,l)
+
+    lngE=Dict{Int64,Float64}(lngE[k,1] => lngE[k,2] for k in 1:size(lngE)[1])
+
+    for i in 1:length(temps)
+        T=temps[i]
+        𝚬=0 # Average energy.
+        𝚬sq=0 # Average of the squared energy.
+        𝚭=0 # Partition function, normalizes the average energy.
+        λ=determineλ(lngE,T)
+        for element in lngE
+            e,lnge=element # Extract the energy and natural logarithm of the energy density.
+            z=sExp(e,T,lnge,λ)
+            𝚬=𝚬+(e*z)
+            𝚬sq=𝚬sq+((e^2)*z)
+            𝚭=𝚭+z
+        end
+        
+        uT=(𝚬/𝚭) # Internal energy for the given temperature.
+        cT=((𝚬sq/𝚭)-(uT^2))/(T^2) 
+        fT=-T*(λ+log(𝚭))
+        entropyS=(uT-fT)/T
+        
+        us[i]=uT/(N^2) # Energy per spin.
+        cs[i]=cT/(N^2)
+        # Specific heat per spin.
+        Fs[i]=fT/(N^2)
+        Ss[i]=entropyS/(N^2)
+    end
+
+    infoM=ones(Float64,(l,5))
+    infoM[:,1]=temps
+    infoM[:,2]=us
+    infoM[:,3]=cs
+    infoM[:,4]=Fs
+    infoM[:,5]=Ss
+
+    return infoM
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 
 
 #Load the data. The first column are the temperatures, the second are the energies, the third the specific heats, the fourth the free energies,
-# and the third are the entropies.
-dataWL=readdlm("/Users/pedroruiz/Desktop/Diego/PF/Data/WLN10")
+# and the fifth are the entropies.
+lngE=readdlm("/Users/pedroruiz/Desktop/Diego/PF/Data/WLlngE16")
 
+dataWL=ising2D_thermo(lngE,0.1,5,33,16)
+
+# include("testrunIsingWL.jl")
+# enSpinIsingWL(dataWL[:,2],dataWL[:,1])
+# heatSpinIsingWL(dataWL[:,3],dataWL[:,1])
+# freeEnIsingWL(dataWL[:,4],dataWL[:,1])
+# entIsingWL(dataWL[:,5],dataWL[:,1])
 
 
 

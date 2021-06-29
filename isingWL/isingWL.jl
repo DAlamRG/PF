@@ -271,7 +271,7 @@ end
 
 """
     sExp(E,T,lnge,λ)
-Given a temperature `T`, an energy `E`, the logarithm of the enegy density `lnge` and a number `λ`; returns e^{ln(g(e))-βE}.
+Given a temperature `T`, an energy `E`, the logarithm of the enegy density `lnge` and a number `λ`; returns e^{ln(g(e))-βE-λ}.
 """
 function sExp(E,T,lnge,λ)
     β=1/T
@@ -324,15 +324,14 @@ end
 """
     ising2DWL_UCFS(edoin,ti,tf,l,numlim2)
  Given an initial state (2D array) `edoin`, an initial (final) temperature `ti` (`tf`), a length for the temperature array `l`
- and a limit number of iterations `numlim2`; returns an array containing the internal energy per spin for each of the 
- temperatures in the range.    
+ and a limit number of iterations `numlim2`; returns a matrix containing the thermodynamic variables´ values at each desired temperature.    
 """
 function ising2DWL_UCFS(edoin,ti,tf,l,numlim2)
 
     N=size(edoin)[1] # N^2 is the total number of spins.
     temps=range(ti,stop=tf,length=l) 
     us=ones(Float64,l) # This array will contain the internal energy per spin for each of the temperatures in `temps`.
-    cs=ones(Float64,l) # 
+    cs=ones(Float64,l) 
     Fs=ones(Float64,l)
     Ss=ones(Float64,l)
 
@@ -341,24 +340,25 @@ function ising2DWL_UCFS(edoin,ti,tf,l,numlim2)
     for i in 1:length(temps)
         T=temps[i]
         𝚬=0 # Average energy.
-        𝚬²=0 # AVerage of the squared energy.
+        𝚬sq=0 # Average of the squared energy.
         𝚭=0 # Partition function, normalizes the average energy.
         λ=determineλ(lngE,T)
         for element in lngE
             e,lnge=element # Extract the energy and natural logarithm of the energy density.
             z=sExp(e,T,lnge,λ)
             𝚬=𝚬+(e*z)
-            𝚬²=𝚬²+(e^2)*z
+            𝚬sq=𝚬sq+((e^2)*z)
             𝚭=𝚭+z
         end
         
         uT=(𝚬/𝚭) # Internal energy for the given temperature.
-        cT=(𝚬²-(𝚬^2))/(T^2) 
-        fT=-T*log(𝚭)
+        cT=((𝚬sq/𝚭)-(uT^2))/(T^2) 
+        fT=-T*(λ+log(𝚭))
         entropyS=(uT-fT)/T
         
         us[i]=uT/(N^2) # Energy per spin.
-        cs[i]=cT/(N^2) # Specific heat per spin.
+        cs[i]=cT/(N^2)
+        # Specific heat per spin.
         Fs[i]=fT/(N^2)
         Ss[i]=entropyS/(N^2)
     end
@@ -378,15 +378,19 @@ end
 
 
 
+
+
+
+
 # Next, do a little trial run.
 
-testedo=rand([-1,1],(16,16))
+#testedo=rand([-1,1],(16,16))
 
-res=ising2DWL_UCFS(testedo,0.01,5,28,100)
+#res=ising2DWL_UCFS(testedo,0.01,5,28,200)
 
-writedlm("/Users/pedroruiz/Desktop/Diego/PF/Data/WLN10",res[1])
+#writedlm("/Users/pedroruiz/Desktop/Diego/PF/Data/WLN16",res[1])
 
-writedlm("/Users/pedroruiz/Desktop/Diego/PF/Data/WLlngE10",res[2])
+#writedlm("/Users/pedroruiz/Desktop/Diego/PF/Data/WLlngE16",res[2])
 
 
 

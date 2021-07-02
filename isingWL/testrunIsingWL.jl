@@ -1,3 +1,4 @@
+using StatsBase: minimum, maximum
 using Base: Int64
 using DelimitedFiles
 using Plots
@@ -176,8 +177,8 @@ range T∈[0,5]. The transition should be located around T=2.3.
 """
 function freeEnIsingWL(fs,temps)
 
-    plt=scatter(temps,fs,ms=5,color="green",xlabel="T",ylabel="f(T)",label="WL",title="WL for Ising model",alpha=0.7,legend=:topleft)
-
+    plt=scatter(temps,fs,ms=5,color="green",xlabel="T",ylabel="f(T)",label="WL",title="WL for Ising model",alpha=0.7,legend=:bottomleft)
+    plot!(temps,fs,lw=3,color="lightseagreen",label="",alpha=0.4)
     return plt
 end
 
@@ -200,6 +201,7 @@ range T∈[0,5]. The transition should be located around T=2.3.
 function entIsingWL(Ss,temps)
 
     plt=scatter(temps,Ss,ms=5,color="green",xlabel="T",ylabel="s(T)",label="WL",title="WL for Ising model",alpha=0.7,legend=:topleft)
+    plot!(temps,Ss,lw=3,color="lightseagreen",label="",alpha=0.4)
 
     return plt
 end
@@ -232,7 +234,13 @@ function ising2D_thermo(lngE,ti,tf,l,N)
     Fs=ones(Float64,l)
     Ss=ones(Float64,l)
 
-    lngE=Dict{Int64,Float64}(lngE[k,1] => lngE[k,2] for k in 1:size(lngE)[1])
+    lngEaux=Dict{Int64,Float64}(lngE[k,1] => lngE[k,2] for k in 1:size(lngE)[1])
+    kk=keys(lngEaux)
+    mink=minimum(kk)
+    maxk=maximum(kk)
+    mrest=min(lngEaux[mink],lngEaux[maxk])
+    
+    lngE=Dict{Int64,Float64}(lngE[k,1] => (lngE[k,2]-mrest) for k in 1:size(lngE)[1])
 
     for i in 1:length(temps)
         T=temps[i]
@@ -294,7 +302,7 @@ end
 # and the fifth are the entropies.
 lngE=readdlm("/Users/pedroruiz/Desktop/Diego/PF/Data/WLlngE16")
 
-dataWL=ising2D_thermo(lngE,0.1,5,33,16)
+dataWL=ising2D_thermo(lngE,0.1,5,52,16)
 
 # include("testrunIsingWL.jl")
 # enSpinIsingWL(dataWL[:,2],dataWL[:,1])

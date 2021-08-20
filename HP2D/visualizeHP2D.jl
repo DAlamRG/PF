@@ -1,5 +1,9 @@
 # I write a function which returns a plot which allows for better visualization of the amino acids type, positions and bonds.
 using Plots
+using DelimitedFiles
+
+
+include("./HP-model2D.jl")
 
 
 
@@ -62,11 +66,11 @@ end
 
 # Write the visualization function. This one takes the geometry into account.
 """
-    visHP2D(edo,HPlist,nα,nβ,geometry)
+    visHP2D(edo,HPlist,nα,nβ,geometry,time,temp)
 Given a matrix encoding the aminoacids positions `edo`, the aminoacid sequence `HPlist`, two numbers `nα,nβ` representing the limits in 
-the `x` and `y` axis, and a geometry; returns a plot displaying the protein configuration.
+the `x` and `y` axis, a geometry, a time `time` and a temperature `temp`; returns a plot displaying the protein configuration.
 """
-function visHP2D(edo,HPlist,nα,nβ,geometry)
+function visHP2D(edo,HPlist,nα,nβ,geometry,time,temp)
     colours=[] # Contains the colors for the two kinds of aminoacids (H = -1 = "red", P = 1 = "green").
     for i in 1:length(HPlist) 
         el=HPlist[i]
@@ -82,7 +86,7 @@ function visHP2D(edo,HPlist,nα,nβ,geometry)
     if geometry == square2D
         
         plt=plot(edo[:,2],edo[:,1],lw=2,markershape=:circle,markercolor=colours ,markersize=7,color="purple",label="",xlabel="",
-        ylabel="",title="Current protein configuration ")
+        ylabel="",title="Current protein configuration \n (Time,Temperature)=($time , $temp) ")
         xlims!((0,nα))
         ylims!((0,nβ))
 
@@ -91,12 +95,12 @@ function visHP2D(edo,HPlist,nα,nβ,geometry)
         edo=chBasisTriangular(edo) # Change the basis for the current configuration `edo`.
 
         plt= scatter(tl[:,1],tl[:,2],color="gray",alpha=0.2,label="",markersize=7,grid=:false,xlabel="",
-        ylabel="",title="Current protein configuration ")
+        ylabel="",title="Current protein configuration \n (Time,Temperature)=($time , $temp) ")
         plot!(edo[:,1],edo[:,2],lw=2,markershape=:circle,markercolor=colours ,markersize=7,color="purple",label="")
         xlims!((-(0.5)*nβ,nα))
         ylims!((0,nβ*0.866025))
     end
-    display(plt)
+    return plt
 end
 
 
@@ -182,3 +186,74 @@ function energiesdistHP(T,energies)
     label="",xlabel="E",ylabel="log(n(E))")
     display(pp)
 end
+
+
+
+
+
+
+
+
+
+
+
+
+# Now that we have a whole simulation over a rabge of temperatures, I make a little animation.
+"""
+    gifFolding(data)
+"""
+function gifFolding(N,name,nums,nrun,geometry)
+    pathname1="/Users/pedroruiz/Desktop/Diego/PF/HP2D/output2D"*"/"*name*"/"
+    pathname2="/Users/pedroruiz/Desktop/Diego/PF/HP2D/output2D"*"/"*name*"/"*string(nrun)*"_"
+
+    temperatures=readdlm(pathname1*"temperatures.csv",',')
+    HPlist=readdlm(pathname1*"HPlist.csv",',')
+    initialconf=readdlm(pathname1*"initialconf.csv",',')
+
+    ns=nums*length(HPlist)
+    ft=(length(temperatures)*ns)+length(temperatures)
+    times=1:4:ft # Number of plots to be made.
+
+    # Now I need to reconstruct the visited states
+    edos=zeros(Int64,(length(HPlist),2,ft))
+    
+    pulledindices=Int.(readdlm(pathname2*"1_1.csv",','))
+    dirs=readdlm(pathname2*"1_2.csv",',')
+    dirs=dirsf(dirs)
+    newcoords=readdlm(pathname2*"1_3.csv",',')
+    rd=reconstructStates2D(N,initialconf,HPlist,pulledindices,dirs,newcoords,geometry)
+    edos[:,:,1:ns+1]=rd
+    laststate=rd[:,:,end]
+    cont=ns+2
+
+
+
+    for i in 2:length(temperatures)
+        pulledindices=Int.(readdlm(pathname2*string(i)*"_1.csv",','))
+        dirs=readdlm(pathname2*string(i)*"_2.csv",',')
+        dirs=dirsf(dirs)
+        newcoords=readdlm(pathname2*string(i)*"_3.csv",',')
+        rS=reconstructStates2D(N,laststate,HPlist,pulledindices,dirs,newcoords,geometry)
+        edos[:,:,cont:cont+ns]=rS
+        laststate=rS[:,:,end]
+        cont=cont+ns+1
+    end
+
+
+    temps=reverse(temperatures)
+    animfold = @animate for i in times
+        mcnumber= Int(ceil((i/length(HPlist))))
+        ind=Int(ceil((i/(ns+1))))
+        temp=temps[ind]
+        visHP2D(edos[:,:,i],HPlist,N,N,geometry,mcnumber,round(temp,digits=2))
+    end
+
+
+    gif(animfold,pathname1*"gift6.gif",fps=10)
+end
+
+
+
+
+
+# anim = gifFolding(21,"trial2DTRIANG4",5,1,triangular2D) (Example)

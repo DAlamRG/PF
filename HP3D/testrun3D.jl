@@ -11,5 +11,6 @@ testProteinfcc=Protein([[7 2 9];[7 3 9];[7 4 9];[7 5 9];[7 6 9];[7 7 9];[7 8 9];
 
 # Employ metropolis to simulate the protein folding process across a range of temperatures.
 
-# mainHP3Dmet(20,5,0.1,3,11,testProteinfcc) "test"
+ mainHP3Dmet(20,5,0.1,3,11,3,testProteinfcc,"test2") 
 
+ 

@@ -1,6 +1,5 @@
 # Here I store all of the functions necessary to perform the so called pull-moves on a 2D array.
 
-include("./visualizeHP2D.jl")
 
 
 

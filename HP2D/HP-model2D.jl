@@ -274,7 +274,7 @@ function HP2Dmet(N,nums,T,protein)
             end
         end
 
-        return (pulledindices,dirs,newcoords)
+        return (pulledindices,dirs,newcoords,enstates)
     end
 end
 
@@ -295,80 +295,109 @@ end
 
 # Next, I write a function which performs multiple simulations over an array of temperatures.
 """
-    mainHP2Dmet(N,nums,ti,tf,nTs,protein)
-Given a 2D array size `N`, a number of Monte-Carlo sweeps `nums` per temperature, an initial(final) temperature `ti(tf)`, the number of 
-temperatures to be visited `nTs`, and a structure `protein` encoding the protein´s configuration; returns the final configuration and 
-the visited energies after performing a simulation using the Metropolis-Hastings algorithm.
+    mainHP2Dmet(N,nums,ti,tf,nTs,nruns,protein,name)
+Given a 3D array of size `N`, a number of Monte-Carlo sweeps `nums` per temperature, an initial(final) temperature `ti(tf)`, the number of 
+temperatures to be visited `nTs`, a number of independent temperature sweeps `nruns`, a structure `protein` encoding the protein´s 
+configuration, and a name for the simulation output `name`; returns the final configuration and the visited energies after performing 
+a simulation using the Metropolis-Hastings algorithm.
 """
-function mainHP2Dmet(N,nums,ti,tf,nTs,protein)
+function mainHP2Dmet(N,nums,ti,tf,nTs, nruns,protein,name)
 
-    temperatures=range(ti,stop=tf,length=nTs) # Decalre a range of temperatures to be visited.
-    geom=protein.geometry
+    temperatures=range(ti,stop=tf,length=nTs) # Declare a range of temperatures to be visited.
 
-    if geom == square2D
+    # Create the directory which will contain the data collected through the simulation.
+    pathstring="./output2D/"
+    pathname=pathstring*name
+    mkdir(pathname)
+    writedlm(pathname*"/temperatures.csv",temperatures,',')
+    writedlm(pathname*"/initialconf.csv",protein.edo,',')
+    writedlm(pathname*"/HPlist.csv",protein.HPlist,',')
+
+    if protein.geometry == square2D
         
-        # Next, I need three arrays which will store all of the `pulledindices,dirs,newcoords`for all of the temperatures. 
-        pulledindicesT=Vector{Int8}[] 
-        newcoordsT=Tuple[] 
-        dirsT=Vector{directions}[]
-
-        # Fill the first entry of the above arrays.
-        datatemp1=HP2Dmet(N,nums,temperatures[end],protein)
-        push!(pulledindicesT,datatemp1[1])
-        push!(dirsT,datatemp1[2])
-        push!(newcoordsT,datatemp1[3])
-
-        laststate=reconstructStates2D(N,protein.edo,protein.HPlist,pulledindicesT[1],dirsT[1],newcoordsT[1],protein.geometry)[:,:,end]
-
-        # For each of the remaining temperatures, employ the Metropolis-Hastings algorithm to store the information about the
-        # visited configurations at the current temperature.
-        for k in 2:length(temperatures)
-            temp=reverse(temperatures)[end-(k-1)] # temperature at which the simulation is performed
-            proteintemp=Protein2D(laststate,protein.HPlist,protein.geometry) # Protein structure for the simulation.
-            pulledindices,dirs,newcoords=HP2Dmet(N,nums,temp,proteintemp)  # Perfomr the simulation.
-            push!(pulledindicesT,pulledindices) # Record the results.
-            push!(dirsT,dirs)
-            push!(newcoordsT,newcoords)
-            laststate=reconstructStates2D(N,laststate,protein.HPlist,pulledindicesT[k],dirsT[k],newcoordsT[k],protein.geometry)[:,:,end] # Reconstruct the last configuration from the previous temperature.
-        end
-
-        return (pulledindicesT,newcoordsT,dirsT,laststate)
+       
 
 
 
 
 
 
+    elseif protein.geometry == triangular2D
+        ns=nums*length(protein.HPlist) # Number of iterations for each sweep in temperatures.
+        # Now, perform a Metropolis-Hastings simulation for each temperature in `temperatures`. Sweep the tempeartures `nruns` times.
+        for l in 1:nruns
+            energies=Float64[] # Energies for the curretn run.
 
-    elseif geom == triangular2D
-
-        # Next, I need three arrays which will store all of the `pulledindices,dirs,newcoords`for all of the temperatures. 
-        pulledindicesT=Vector{Int8}[] 
-        newcoordsT=Matrix{Int64}[] 
-        dirsT=Vector{directions}[]
-
-        # Fill the first entry of the above arrays.
-        datatemp1=HP2Dmet(N,nums,temperatures[end],protein)
-        push!(pulledindicesT,datatemp1[1])
-        push!(dirsT,datatemp1[2])
-        push!(newcoordsT,datatemp1[3])
-
-        laststate=reconstructStates2D(N,protein.edo,protein.HPlist,pulledindicesT[1],dirsT[1],newcoordsT[1],protein.geometry)[:,:,end]
-
-        # For each of the remaining temperatures, employ the Metropolis-Hastings algorithm to store the information about the
-        # visited configurations at the current temperature.
-        for k in 2:length(temperatures)
-            temp=reverse(temperatures)[end-(k-1)] # temperature at which the simulation is performed
-            proteintemp=Protein2D(laststate,protein.HPlist,protein.geometry) # Protein structure for the simulation.
-            pulledindices,dirs,newcoords=HP2Dmet(N,nums,temp,proteintemp)  # Perfomr the simulation.
-            push!(pulledindicesT,pulledindices) # Record the results.
-            push!(dirsT,dirs)
-            push!(newcoordsT,newcoords)
-            laststate=reconstructStates2D(N,laststate,protein.HPlist,pulledindicesT[k],dirsT[k],newcoordsT[k],protein.geometry)[:,:,end] # Reconstruct the last configuration from the previous temperature.
-        end
-
-        return (pulledindicesT,newcoordsT,dirsT,laststate)
+            # Perform the first simulation.
+            datatemp1=HP2Dmet(N,nums,temperatures[end],protein)
+            pulledindicesT=datatemp1[1] # The next three variables will be used to perform subsequent simulations.
+            dirsT=datatemp1[2]
+            newcoordsT=datatemp1[3]
+            laststate=reconstructStates2D(N,protein.edo,protein.HPlist,pulledindicesT,dirsT,newcoordsT,protein.geometry)[:,:,end]
+            append!(energies,datatemp1[4]) # Store the first batch of energies.
     
+    
+            # Store the output generated in the first simulation.
+            pathnameaux=pathname*"/"*string(l)
+            writedlm(pathnameaux*"_1_1.csv",pulledindicesT,',')
+            writedlm(pathnameaux*"_1_2.csv",Int.(dirsT)) # Save only the Int value, not the whole enum info.
+            writedlm(pathnameaux*"_1_3.csv",newcoordsT,',')
+
+    
+            # For each of the remaining temperatures, employ the Metropolis-Hastings algorithm to store the information about the
+            # visited configurations at the current temperature.
+            for k in 2:length(temperatures)
+                temp=reverse(temperatures)[k] # temperature at which the simulation is performed
+                proteinaux=Protein2D(laststate,protein.HPlist,protein.geometry) # Auxiliary protein structure for the simulation.
+                pulledindices,dirs,newcoords,enstates=HP2Dmet(N,nums,temp,proteinaux)  # Perform the simulation.
+                append!(energies,enstates) # Store the visited energies.
+
+                pulledindicesT=pulledindices # The next three variables will be used to perform subsequent simulations.
+                dirsT=dirs
+                newcoordsT=newcoords
+                
+                # Store the output generated in the first simulation.
+                st="_"*string(k)
+                writedlm(pathnameaux*st*"_1.csv",pulledindicesT,',')
+                writedlm(pathnameaux*st*"_2.csv",Int.(dirsT),',')
+                writedlm(pathnameaux*st*"_3.csv",newcoordsT,',')
+                
+                laststate=reconstructStates2D(N,laststate,protein.HPlist,pulledindicesT,dirsT,newcoordsT,protein.geometry)[:,:,end] 
+            end
+
+
+            writedlm(pathnameaux*"_energies.csv",pulledindicesT,',') # Save all of the visted energies.
+
+        end    
     end
 
+    println("Simulation succesfully completed")
+end
+
+
+
+
+
+
+
+
+
+
+# I will need a function to turn integers into `dirs` type.
+"""
+    dirsf(vec)
+Given a vector with integer entries; returns the equivalent `dirs` vector.
+"""
+function dirsf(vec)
+    l=length(vec)
+    dirsVec=Vector{directions}(undef,l) # Declare the equivalent `dirs` vector.
+    for k in 1:l
+        val=vec[k]
+        if val == 1
+            dirsVec[k]=forwards
+        else
+            dirsVec[k]=backwards
+        end
+    end
+    return dirsVec
 end

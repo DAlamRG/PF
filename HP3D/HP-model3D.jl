@@ -2,8 +2,8 @@ using Plots: length
 using DelimitedFiles
 # First attempt at programming the Metropolis algorithm for the HP model.
 
-include("/Users/pedroruiz/Desktop/Diego/PF/HP3D/HP-model3D-pullmoves.jl")
-include("/Users/pedroruiz/Desktop/Diego/PF/HP3D/visualizeHP3D.jl")
+include("/PF/HP3D/HP-model3D-pullmoves.jl")
+include("/PF/HP3D/visualizeHP3D.jl")
 
 
 
@@ -229,10 +229,12 @@ function mainHP3Dmet(N,nums,ti,tf,nTs,nruns,protein,name)
     temperatures=range(ti,stop=tf,length=nTs) # Decalre a range of temperatures to be visited.
 
     # Create the directory which will contain the dat collected trough the simulation.
-    pathstring="/Users/pedroruiz/Desktop/Diego/PF/HP3D/output3D/"
+    pathstring="/PF/HP3D/output3D/"
     pathname=pathstring*name
     mkdir(pathname)
-    writedlm(pathname*"/temperatures",temperatures,',')
+    writedlm(pathname*"/temperatures.csv",temperatures,',')
+    writedlm(pathname*"/initialconf.csv",protein.edo,',')
+    writedlm(pathname*"/HPlist.csv",protein.HPlist,',')
 
  
     # Now, perform a Metropolis-Hastings simulation for each temperature in `temperatures`. Sweep the tempeartures `nruns` times.
@@ -248,9 +250,9 @@ function mainHP3Dmet(N,nums,ti,tf,nTs,nruns,protein,name)
 
         # Store the output generated in the first simulation.
         pathnameaux=pathname*"/"*string(l)
-        writedlm(pathnameaux*"_1_1",pulledindicesT,',')
-        #writedlm(pathnameaux*"_1_2",dirsT)
-        writedlm(pathnameaux*"_1_3",newcoordsT,',')
+        writedlm(pathnameaux*"_1_1.csv",pulledindicesT,',')
+        writedlm(pathnameaux*"_1_2.csv",Int.(dirsT)) # Save only the numbers, not the whole enum type.
+        writedlm(pathnameaux*"_1_3.csv",newcoordsT,',')
 
         # For each of the remaining temperatures, employ the Metropolis-Hastings algorithm to store the information about the
         # visited configurations at the current temperature.
@@ -265,9 +267,9 @@ function mainHP3Dmet(N,nums,ti,tf,nTs,nruns,protein,name)
             
             # Store the output generated in the first simulation.
             st="_"*string(k)
-            writedlm(pathnameaux*st*"_1",pulledindicesT,',')
-            #writedlm(pathnameaux*"/$k_2",dirsT,',')
-            writedlm(pathnameaux*st*"_2",newcoordsT,',')
+            writedlm(pathnameaux*st*"_1.csv",pulledindicesT,',')
+            writedlm(pathnameaux*"/$k_2.csv",Int.(dirsT),',')
+            writedlm(pathnameaux*st*"_2.csv",newcoordsT,',')
             
             laststate=reconstructStates3D(N,laststate,protein.HPlist,pulledindicesT,dirsT,newcoordsT,protein.geometry)[:,:,end] 
         end

@@ -118,25 +118,6 @@ end
 
 
 
-# 
-"""
-    visHP2Dheat(red,edo)
-
-Given the array `red` containing the protein´s configuration, a matrix encoding the aminoacids positions `edo`; returns 
-a heat map with the protein´s configuration.
-"""
-function visHP2Dheat(red,edo)
-    N=size(red)[1]
-    plt=heatmap(1:N,1:N,red,xlabel="",ylabel="",label="",title="Current protein configuration")
-    plot!(edo[:,2],edo[:,1],lw=2,markershape=:circle,markersize=3,color="purple",label="")
-    display(plt)
-end
-
-
-
-
-
-
 
 
 
@@ -198,11 +179,17 @@ end
 
 
 
+
+
 # Now that we have a whole simulation over a rabge of temperatures, I make a little animation.
 """
-    gifFolding(data)
+    gifFolding(N,name,nums,nrun,geometry,nskip,gifname)
+Given a lattice size `N`, the name where the data is stored `name`, the number of monte-carlo sweeps per temperature `nums` for
+the provided data, the run number in the data `nrun`, the geomtery of the data `geometry`, the number of frames to be 
+skipped in the animation `nskip`, and a name for the animation `gifname`; saves an animation to the directory from where 
+the data comes from.
 """
-function gifFolding(N,name,nums,nrun,geometry)
+function gifFolding(N,name,nums,nrun,geometry,nskip,gifname)
     pathname1="/Users/pedroruiz/Desktop/Diego/PF/HP2D/output2D"*"/"*name*"/"
     pathname2="/Users/pedroruiz/Desktop/Diego/PF/HP2D/output2D"*"/"*name*"/"*string(nrun)*"_"
 
@@ -211,34 +198,56 @@ function gifFolding(N,name,nums,nrun,geometry)
     initialconf=readdlm(pathname1*"initialconf.csv",',')
 
     ns=nums*length(HPlist)
-    ft=(length(temperatures)*ns)+length(temperatures)
-    times=1:4:ft # Number of plots to be made.
+    ft=(length(temperatures)*ns)+length(temperatures) # Need to add the second term beacuse I am storing the final/initial configuration.
+    times=1:nskip:ft # Number of plots to be made.
 
-    # Now I need to reconstruct the visited states
+    # Now I need to reconstruct the visited states, according to the geometry
     edos=zeros(Int64,(length(HPlist),2,ft))
-    
     pulledindices=Int.(readdlm(pathname2*"1_1.csv",','))
     dirs=readdlm(pathname2*"1_2.csv",',')
-    dirs=dirsf(dirs)
-    newcoords=readdlm(pathname2*"1_3.csv",',')
-    rd=reconstructStates2D(N,initialconf,HPlist,pulledindices,dirs,newcoords,geometry)
-    edos[:,:,1:ns+1]=rd
-    laststate=rd[:,:,end]
-    cont=ns+2
+    dirs=dirsf(dirs) # Data is written as Int type, turn it back to enum type.
+
+    if geometry == triangular2D
+        newcoords=readdlm(pathname2*"1_3.csv",',')
+        rd=reconstructStates2D(N,initialconf,HPlist,pulledindices,dirs,newcoords,geometry)
+        edos[:,:,1:ns+1]=rd
+        laststate=rd[:,:,end]
+        cont=ns+2
+
+        for i in 2:length(temperatures)
+            pulledindices=Int.(readdlm(pathname2*string(i)*"_1.csv",','))
+            dirs=readdlm(pathname2*string(i)*"_2.csv",',')
+            dirs=dirsf(dirs)
+            newcoords=readdlm(pathname2*string(i)*"_3.csv",',')
+            rS=reconstructStates2D(N,laststate,HPlist,pulledindices,dirs,newcoords,geometry)
+            edos[:,:,cont:cont+ns]=rS
+            laststate=rS[:,:,end]
+            cont=cont+ns+1
+        end
 
 
+    elseif geometry == square2D
+        newcoords1=readdlm(pathname2*"1_3_1.csv",',')
+        newcoords2=readdlm(pathname2*"1_3_2.csv",',')
+        newcoords=(newcoords1,newcoords2)
+        rd=reconstructStates2D(N,initialconf,HPlist,pulledindices,dirs,newcoords,geometry)
+        edos[:,:,1:ns+1]=rd
+        laststate=rd[:,:,end]
+        cont=ns+2
 
-    for i in 2:length(temperatures)
-        pulledindices=Int.(readdlm(pathname2*string(i)*"_1.csv",','))
-        dirs=readdlm(pathname2*string(i)*"_2.csv",',')
-        dirs=dirsf(dirs)
-        newcoords=readdlm(pathname2*string(i)*"_3.csv",',')
-        rS=reconstructStates2D(N,laststate,HPlist,pulledindices,dirs,newcoords,geometry)
-        edos[:,:,cont:cont+ns]=rS
-        laststate=rS[:,:,end]
-        cont=cont+ns+1
+        for i in 2:length(temperatures)
+            pulledindices=Int.(readdlm(pathname2*string(i)*"_1.csv",','))
+            dirs=readdlm(pathname2*string(i)*"_2.csv",',')
+            dirs=dirsf(dirs)
+            newcoords1=readdlm(pathname2*string(i)*"_3_1.csv",',')
+            newcoords2=readdlm(pathname2*string(i)*"_3_2.csv",',')
+            newcoords=(newcoords1,newcoords2)
+            rS=reconstructStates2D(N,laststate,HPlist,pulledindices,dirs,newcoords,geometry)
+            edos[:,:,cont:cont+ns]=rS
+            laststate=rS[:,:,end]
+            cont=cont+ns+1
+        end
     end
-
 
     temps=reverse(temperatures)
     animfold = @animate for i in times
@@ -247,13 +256,12 @@ function gifFolding(N,name,nums,nrun,geometry)
         temp=temps[ind]
         visHP2D(edos[:,:,i],HPlist,N,N,geometry,mcnumber,round(temp,digits=2))
     end
-
-
-    gif(animfold,pathname1*"gift6.gif",fps=10)
+    gif(animfold,pathname1*gifname,fps=10)
 end
 
 
 
 
 
-# anim = gifFolding(21,"trial2DTRIANG4",5,1,triangular2D) (Example)
+# anim = gifFolding(21,"trial2DTRIANG4",5,1,triangular2D,4) (Example)
+# anim2 = gifFolding(38,"trial2DSQUARE1",5,1,square2D,4,"gifsquare1.gif")

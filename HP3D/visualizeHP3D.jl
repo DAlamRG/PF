@@ -1,4 +1,4 @@
-include("/PF/HP3D/HP-model3D-pullmoves.jl")
+include("./HP-model3D-pullmoves.jl")
 
 using Plots
     

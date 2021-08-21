@@ -220,7 +220,7 @@ function HP2Dmet(N,nums,T,protein)
         end
 
         newcoords=(newcoords1,newcoords2)
-        return (pulledindices,dirs,newcoords)
+        return (pulledindices,dirs,newcoords,enstates)
 
 
     elseif geometry == triangular2D
@@ -315,18 +315,62 @@ function mainHP2Dmet(N,nums,ti,tf,nTs, nruns,protein,name)
 
     if protein.geometry == square2D
         
-       
+        # Now, perform a Metropolis-Hastings simulation for each temperature in `temperatures`. Sweep the tempeartures `nruns` times.
+        for l in 1:nruns
+            energies=Float64[] # Energies for the current run.
+
+            # Perform the first simulation.
+            datatemp1=HP2Dmet(N,nums,temperatures[end],protein)
+            pulledindicesT=datatemp1[1] # The next three variables will be used to perform subsequent simulations.
+            dirsT=datatemp1[2]
+            newcoordsT=datatemp1[3]
+            laststate=reconstructStates2D(N,protein.edo,protein.HPlist,pulledindicesT,dirsT,newcoordsT,protein.geometry)[:,:,end]
+            append!(energies,datatemp1[4]) # Store the first batch of energies.
+    
+    
+            # Store the output generated in the first simulation.
+            pathnameaux=pathname*"/"*string(l)
+            writedlm(pathnameaux*"_1_1.csv",pulledindicesT,',')
+            writedlm(pathnameaux*"_1_2.csv",Int.(dirsT),',') # Save only the Int value, not the whole enum info.
+            writedlm(pathnameaux*"_1_3_1.csv",newcoordsT[1],',')
+            writedlm(pathnameaux*"_1_3_2.csv",newcoordsT[2],',')
+
+    
+            # For each of the remaining temperatures, employ the Metropolis-Hastings algorithm to store the information about the
+            # visited configurations at the current temperature.
+            for k in 2:length(temperatures)
+                temp=reverse(temperatures)[k] # temperature at which the simulation is performed
+                proteinaux=Protein2D(laststate,protein.HPlist,protein.geometry) # Auxiliary protein structure for the simulation.
+                pulledindices,dirs,newcoords,enstates=HP2Dmet(N,nums,temp,proteinaux)  # Perform the simulation.
+                append!(energies,enstates) # Store the visited energies.
+
+                pulledindicesT=pulledindices # The next three variables will be used to perform subsequent simulations.
+                dirsT=dirs
+                newcoordsT=newcoords
+                
+                # Store the output generated in the first simulation.
+                st="_"*string(k)
+                writedlm(pathnameaux*st*"_1.csv",pulledindicesT,',')
+                writedlm(pathnameaux*st*"_2.csv",Int.(dirsT),',')
+                writedlm(pathnameaux*st*"_3_1.csv",newcoordsT[1],',')
+                writedlm(pathnameaux*st*"_3_2.csv",newcoordsT[2],',')
+                
+                laststate=reconstructStates2D(N,laststate,protein.HPlist,pulledindicesT,dirsT,newcoordsT,protein.geometry)[:,:,end] 
+            end
 
 
+            writedlm(pathnameaux*"_energies.csv",pulledindicesT,',') # Save all of the visted energies.
 
+        end
+        
 
 
 
     elseif protein.geometry == triangular2D
-        ns=nums*length(protein.HPlist) # Number of iterations for each sweep in temperatures.
+        
         # Now, perform a Metropolis-Hastings simulation for each temperature in `temperatures`. Sweep the tempeartures `nruns` times.
         for l in 1:nruns
-            energies=Float64[] # Energies for the curretn run.
+            energies=Float64[] # Energies for the current run.
 
             # Perform the first simulation.
             datatemp1=HP2Dmet(N,nums,temperatures[end],protein)

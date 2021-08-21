@@ -2,8 +2,8 @@ using Plots: length
 using DelimitedFiles
 # First attempt at programming the Metropolis algorithm for the HP model.
 
-include("/PF/HP3D/HP-model3D-pullmoves.jl")
-include("/PF/HP3D/visualizeHP3D.jl")
+include("./HP-model3D-pullmoves.jl")
+include("./visualizeHP3D.jl")
 
 
 
@@ -192,7 +192,7 @@ function HP3Dmet(N,nums,T,protein)
     end
 
     
-    return (pulledindices,dirs,newcoords)
+    return (pulledindices,dirs,newcoords,enstates)
 end
 
 
@@ -229,7 +229,7 @@ function mainHP3Dmet(N,nums,ti,tf,nTs,nruns,protein,name)
     temperatures=range(ti,stop=tf,length=nTs) # Decalre a range of temperatures to be visited.
 
     # Create the directory which will contain the dat collected trough the simulation.
-    pathstring="/PF/HP3D/output3D/"
+    pathstring="./output3D/"
     pathname=pathstring*name
     mkdir(pathname)
     writedlm(pathname*"/temperatures.csv",temperatures,',')
@@ -239,6 +239,7 @@ function mainHP3Dmet(N,nums,ti,tf,nTs,nruns,protein,name)
  
     # Now, perform a Metropolis-Hastings simulation for each temperature in `temperatures`. Sweep the tempeartures `nruns` times.
     for l in 1:nruns
+        energies=Float64[] # Energies for the current run.
 
         # Perform the first simulation.
         datatemp1=HP3Dmet(N,nums,temperatures[end],protein)
@@ -246,6 +247,7 @@ function mainHP3Dmet(N,nums,ti,tf,nTs,nruns,protein,name)
         dirsT=datatemp1[2]
         newcoordsT=datatemp1[3]
         laststate=reconstructStates3D(N,protein.edo,protein.HPlist,pulledindicesT,dirsT,newcoordsT,protein.geometry)[:,:,end]
+        append!(energies,datatemp1[4]) # Store the first batch of energies.
 
 
         # Store the output generated in the first simulation.
@@ -259,7 +261,8 @@ function mainHP3Dmet(N,nums,ti,tf,nTs,nruns,protein,name)
         for k in 2:length(temperatures)
             temp=reverse(temperatures)[end-(k-1)] # temperature at which the simulation is performed
             proteinaux=Protein(laststate,protein.HPlist,protein.geometry) # Protein structure for the simulation.
-            pulledindices,dirs,newcoords=HP3Dmet(N,nums,temp,proteinaux)  # Perfom the simulation.
+            pulledindices,dirs,newcoords,enstates=HP3Dmet(N,nums,temp,proteinaux)  # Perfom the simulation.
+            append!(energies,enstates) # Store the visited energies.
             
             pulledindicesT=pulledindices # The next three variables will be used to perform subsequent simulations.
             dirsT=dirs
@@ -268,11 +271,12 @@ function mainHP3Dmet(N,nums,ti,tf,nTs,nruns,protein,name)
             # Store the output generated in the first simulation.
             st="_"*string(k)
             writedlm(pathnameaux*st*"_1.csv",pulledindicesT,',')
-            writedlm(pathnameaux*"/$k_2.csv",Int.(dirsT),',')
-            writedlm(pathnameaux*st*"_2.csv",newcoordsT,',')
+            writedlm(pathnameaux*st*"_2.csv",Int.(dirsT),',')
+            writedlm(pathnameaux*st*"_3.csv",newcoordsT,',')
             
             laststate=reconstructStates3D(N,laststate,protein.HPlist,pulledindicesT,dirsT,newcoordsT,protein.geometry)[:,:,end] 
         end
+        writedlm(pathnameaux*"_energies.csv",energies,',') # Save all of the visted energies.
     end
 
     println("Simulation succesfully completed")

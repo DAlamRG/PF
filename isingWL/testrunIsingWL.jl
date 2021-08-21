@@ -4,8 +4,8 @@ using DelimitedFiles
 using Plots
 gr()
 
-# Here I test the WL algorithm. PLot the internal energy per spin.
-include("/Users/pedroruiz/Desktop/Diego/PF/isingWL/isingWL.jl")
+# Here I test the WL algorithm. Plot the internal energy per spin.
+include("./isingWL.jl")
 
 
 
@@ -300,7 +300,7 @@ end
 
 #Load the data. The first column are the temperatures, the second are the energies, the third the specific heats, the fourth the free energies,
 # and the fifth are the entropies.
-lngE=readdlm("/Users/pedroruiz/Desktop/Diego/PF/Data/WLlngE16")
+lngE=readdlm("./Data/WLlngE16")
 
 dataWL=ising2D_thermo(lngE,0.1,5,52,16)
 

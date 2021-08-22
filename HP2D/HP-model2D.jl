@@ -359,7 +359,7 @@ function mainHP2Dmet(N,nums,ti,tf,nTs, nruns,protein,name)
             end
 
 
-            writedlm(pathnameaux*"_energies.csv",pulledindicesT,',') # Save all of the visted energies.
+            writedlm(pathnameaux*"_energies.csv",energies,',') # Save all of the visted energies.
 
         end
         
@@ -410,7 +410,7 @@ function mainHP2Dmet(N,nums,ti,tf,nTs, nruns,protein,name)
             end
 
 
-            writedlm(pathnameaux*"_energies.csv",pulledindicesT,',') # Save all of the visted energies.
+            writedlm(pathnameaux*"_energies.csv",energies,',') # Save all of the visted energies.
 
         end    
     end

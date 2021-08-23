@@ -249,7 +249,7 @@ function gifFolding(N,name,nums,nrun,geometry,nskip,gifname)
     initialconf=readdlm(pathname1*"initialconf.csv",',')
 
     ns=nums*length(HPlist)
-    ft=(length(temperatures)*ns)+length(temperatures) # Need to add the second term beacuse I am storing the final/initial configuration.
+    ft=(length(temperatures)*ns)+1 # Need to add the second term beacuse I am storing the final/initial configuration.
     times=1:nskip:ft # Number of plots to be made.
 
     # Now I need to reconstruct the visited states, according to the geometry
@@ -261,32 +261,38 @@ function gifFolding(N,name,nums,nrun,geometry,nskip,gifname)
     newcoords=readdlm(pathname2*"1_3.csv",',')
     rd=reconstructStates3D(N,initialconf,HPlist,pulledindices,dirs,newcoords,geometry)
     edos[:,:,1:ns+1]=rd
-    laststate=rd[:,:,end]
+    laststate=rd[:,:,end] # This is the initial state for the next temperature.
+    
     cont=ns+2
-
     for i in 2:length(temperatures)
         pulledindices=Int.(readdlm(pathname2*string(i)*"_1.csv",','))
         dirs=readdlm(pathname2*string(i)*"_2.csv",',')
         dirs=dirsf(dirs)
         newcoords=readdlm(pathname2*string(i)*"_3.csv",',')
         rS=reconstructStates3D(N,laststate,HPlist,pulledindices,dirs,newcoords,geometry)
-        edos[:,:,cont:cont+ns]=rS
+        edos[:,:,cont:cont+(ns-1)]=rS[:,:,2:end]
         laststate=rS[:,:,end]
-        cont=cont+ns+1
+        cont=cont+ns
     end
+    println("The states have been reconstructed.")
 
 
     temps=reverse(temperatures)
     counteranim = 1
     animfold = @animate for i in times
         counteranim += 1 
-        mcnumber= Int(ceil((i/length(HPlist))))
-        ind=Int(ceil((i/(ns+1))))
+        mcnumber= Int(ceil(((i-1)/length(HPlist)))) # Monte Carlo step.
+        ind=0
+        if i == 1
+            ind = 1
+        else
+            ind = Int(ceil(((i-1)/(ns))))
+        end
         temp=temps[ind]
-        cameraval=(mod1(2*counteranim,360),40)
+        cameraval=(mod1(2*counteranim,360),30)
         visHP3D(edos[:,:,i],HPlist,N,geometry,mcnumber,round(temp,digits=2),(true,cameraval))
     end
-    println("animation is stored, all that is left to do is to save it to a .gif file")
+    println("Animation is stored, all that is left to do is to save it to a .gif file.")
     gif(animfold,pathname1*gifname,fps=24)
 end
 
@@ -294,4 +300,4 @@ end
 
 # Example
 
- gifFolding(20,"trial3Dfcc3",8,1,fcc,3,"3Danim1.gif")
+ gifFolding(20,"trial3Dfcc3",8,1,fcc,3,"3Danim2.gif")

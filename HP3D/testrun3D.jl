@@ -2,7 +2,7 @@ using Base: Int8
 using DelimitedFiles
 include("./HP-model3D.jl")
 
-plotly()
+# plotly()
 
 
 
@@ -11,6 +11,6 @@ testProteinfcc=Protein([[7 2 9];[7 3 9];[7 4 9];[7 5 9];[7 6 9];[7 7 9];[7 8 9];
 
 # Employ metropolis to simulate the protein folding process across a range of temperatures.
 
- mainHP3Dmet(20,5,0.1,0.4,11,2,testProteinfcc,"trial3Dfcc1") 
+ mainHP3Dmet(20,8,0.1,0.3,11,2,testProteinfcc,"trial3Dfcc3") 
 
  

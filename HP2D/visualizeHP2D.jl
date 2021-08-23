@@ -190,8 +190,8 @@ skipped in the animation `nskip`, and a name for the animation `gifname`; saves 
 the data comes from.
 """
 function gifFolding(N,name,nums,nrun,geometry,nskip,gifname)
-    pathname1="/Users/pedroruiz/Desktop/Diego/PF/HP2D/output2D"*"/"*name*"/"
-    pathname2="/Users/pedroruiz/Desktop/Diego/PF/HP2D/output2D"*"/"*name*"/"*string(nrun)*"_"
+    pathname1="./output2D"*"/"*name*"/"
+    pathname2="./output2D"*"/"*name*"/"*string(nrun)*"_"
 
     temperatures=readdlm(pathname1*"temperatures.csv",',')
     HPlist=readdlm(pathname1*"HPlist.csv",',')

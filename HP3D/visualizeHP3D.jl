@@ -287,7 +287,7 @@ function gifFolding(N,name,nums,nrun,geometry,nskip,gifname)
         visHP3D(edos[:,:,i],HPlist,N,geometry,mcnumber,round(temp,digits=2),(true,cameraval))
     end
     println("animation is stored, all that is left to do is to save it to a .gif file")
-    gif(animfold,pathname1*gifname,fps=10)
+    gif(animfold,pathname1*gifname,fps=24)
 end
 
 

@@ -461,7 +461,7 @@ end
 """
     countLast3D(N,edo,HPlist,geometry) 
 
-Given a 2D array size `N`, a matrix encoding the aminoacids positions `edo`,an array containing the sequence of H,P aminoacids `HPlist`, and
+Given a 3D array size `N`, a matrix encoding the aminoacids positions `edo`,an array containing the sequence of H,P aminoacids `HPlist`, and
 a geometry; counts the number of possible pull moves for the first amino acid, recording the possible positions.
 """
 function countLast3D(N,edo,HPlist,geometry) 

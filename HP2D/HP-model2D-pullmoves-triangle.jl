@@ -807,9 +807,9 @@ Given a 2D array size `N`, a matrix encoding the aminoacids positions `edo`, an 
 """
 function totalpull2Dg(N,edo,HPlist,geometry)
     totalpull=0
-    if geometry == square2D
+    if geometry == triangular2D
         totalpull=countpull2DΔ(N,edo,HPlist)[1]
-    elseif geometry == triangular2D
+    elseif geometry == square2D
         totalpull=countpull2D(N,edo,HPlist)[1]
     end
 

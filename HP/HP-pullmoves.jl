@@ -476,8 +476,8 @@ function countFirst(N,edo,HPlist,geometry)
         
         for coord1 in coordinatesp # This are the coordinates to which I should be able to move monomer `ind+1` into.
             coordsaux=excludedNeighborsCoords(red,coord1,edo[ind+1,:],geometry)
-            l=size(coordsaux)[1]
-            append!(coordinates1,repeat(coord1,l))
+            l=length(coordsaux)
+            append!(coordinates1,Vector{Int8}[coord1 for i in 1:l])
             append!(coordinates2,coordsaux)
         end
     
@@ -547,7 +547,7 @@ function countLast(N,edo,HPlist,geometry)
         for coord1 in coordinatesp # This are the coordinates to which I should be able to move monomer `ind+1` into.
             coordsaux=excludedNeighborsCoords(red,coord1,edo[ind-1,:],geometry)
             l=size(coordsaux)[1]
-            append!(coordinates1,repeat(coord1,l))
+            append!(coordinates1,Vector{Int8}[coord1 for i in 1:l])
             append!(coordinates2,coordsaux)
         end
     
@@ -615,10 +615,10 @@ function countMiddle(N,ind,edo,HPlist,geometry)
         # must be empty.
 
         # Next we store the possible free spaces for `ind` when pulling backwards (as in moving only the previous monomers).
-        coordinates1=sharedNeighborsCoords3D(red,edo[ind,:],edo[ind+1,:],geometry)
+        coordinates1=sharedNeighborsCoords(red,edo[ind,:],edo[ind+1,:],geometry)
     
         # Store possible free spaces when pulling forwards.
-        coordinatesi=sharedNeighborsCoords3D(red,edo[ind,:],edo[ind-1,:],geometry)
+        coordinatesi=sharedNeighborsCoords(red,edo[ind,:],edo[ind-1,:],geometry)
     
     
         # Now I have in `coordinates1,coordinatesi` the potential new positions for `ind`. The length of these arrays is 
@@ -639,11 +639,13 @@ function countMiddle(N,ind,edo,HPlist,geometry)
         # Next, we store the possible coordinates to which we might be able to move `ind-1` or `ind+1`.
         coordinatesauxf=Vector{Int16}[]
         coordinatesauxb=Vector{Int16}[]
-        for coord in nearestNeighborsCoords(red,edo[ind,:],geometry) # Leaving an extra space here. !!!!!!!!!
+        for coord in excludedNeighborsCoords(red,edo[ind,:],edo[ind-1,:],geometry) # Leaving an extra space here. !!!!!!!!!
             if (coord == edo[ind-1,:]) || (red[CartesianIndex(coord[1],coord[2])] == 0)
                 push!(coordinatesauxf,coord)
             end
+        end
 
+        for coord in excludedNeighborsCoords(red,edo[ind,:],edo[ind+1,:],geometry)
             if (coord == edo[ind+1,:]) || (red[CartesianIndex(coord[1],coord[2])] == 0)
                 push!(coordinatesauxb,coord)
             end
@@ -656,7 +658,7 @@ function countMiddle(N,ind,edo,HPlist,geometry)
         for coord2 in coordinatesauxf
             coord1=sharedNeighborsCoords(red,coord2,edo[ind+1,:],geometry)
             append!(coordinates1,coord1)
-            append!(coordinates2,repeat(coord2,length(coord1)))
+            append!(coordinates2,Vector{Int8}[coord2 for i in 1:length(coord1)])
         end
 
         # Now consider the case when  we are pulling the chain backwards.
@@ -664,9 +666,9 @@ function countMiddle(N,ind,edo,HPlist,geometry)
         coordinatesii=[] # Coordinates for `ind+1`.
 
         for coordii in coordinatesauxb
-            coordi=sharedNeighborsCoords(red,edo[ind,:],edo[ind-1,:],geometry)
-                append!(coordinatesi,coordi)
-                append!(coordinatesii,repeat(coordii,length(coordi)))
+            coordi=sharedNeighborsCoords(red,coordii,edo[ind-1,:],geometry)
+            append!(coordinatesi,coordi)
+            append!(coordinatesii,Vector{Int8}[coordii for i in 1:length(coordi)])
         end
 
         # Now I have in `coordinates1,coordinates2` the potential new positions for `ind,ind-1`. The length of these arrays is 

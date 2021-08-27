@@ -91,7 +91,7 @@ function metropolis(N,nums,T,protein)
                     npullstates[l]=copy(npullstates[l-1])
                     difes[l-1]=0
                     pulledindices[l-1]=0
-                    newcoords[l-1,:]=[0,0,0]
+                    newcoords[l-1,:]=repeat([0],length(edo[1,:]))
                     push!(dirs,nonetaken)
                 end
             end
@@ -147,8 +147,8 @@ function metropolis(N,nums,T,protein)
                     npullstates[l]=copy(npullstates[l-1])
                     difes[l-1]=0
                     pulledindices[l-1]=0
-                    newcoords1[l-1,:]=[0,0]
-                    newcoords2[l-1,:]=[0,0]
+                    newcoords1[l-1,:]=repeat([0],length(edo[1,:]))
+                    newcoords2[l-1,:]=repeat([0],length(edo[1,:]))
                     push!(dirs,nonetaken)
                 end
             end
@@ -200,6 +200,9 @@ function main_met(N,nums,ti,tf,nTs,nruns,protein,name)
     writedlm(pathname*"/temperatures.csv",temperatures,',')
     writedlm(pathname*"/initialconf.csv",protein.edo,',')
     writedlm(pathname*"/HPlist.csv",protein.HPlist,',')
+    writedlm(pathname*"/latticesize.csv",N,',')
+    writedlm(pathname*"/mc_sweeps.csv",nums,',')
+    writedlm(pathname*"/geometry.csv",Int(protein.geometry),',')
 
     geometry=protein.geometry
 

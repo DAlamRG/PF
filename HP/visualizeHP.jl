@@ -1,7 +1,10 @@
+using Plots: length
 # This script contains the code necessary for visualizing the outputs of the main function.
+
 
 using Plots
 using DelimitedFiles
+pyplot()
 
 include("./HP-pullmoves.jl")
 
@@ -169,18 +172,18 @@ function visHP(edo,HPlist,N,geometry,time,temp,camargs)
         
         plt=plot(edo[:,2],edo[:,1],lw=2,markershape=:circle,markercolor=colours ,markersize=7,color="purple",label="",xlabel="",
         ylabel="",title="Current protein configuration \n (Time,Temperature)=($time , $temp) ")
-        xlims!((0,nα))
-        ylims!((0,nα))
+        xlims!((0,N))
+        ylims!((0,N))
 
     elseif geometry == triangular2D
-        tl=triangularLattice(nα,nα) # Generate the background lattice
+        tl=triangularLattice(N,N) # Generate the background lattice
         edo=chBasisTriangular(edo) # Change the basis for the current configuration `edo`.
 
         plt= scatter(tl[:,1],tl[:,2],color="gray",alpha=0.2,label="",markersize=7,grid=:false,xlabel="",
         ylabel="",title="Current protein configuration \n (Time,Temperature)=($time , $temp) ")
         plot!(edo[:,1],edo[:,2],lw=2,markershape=:circle,markercolor=colours ,markersize=7,color="purple",label="")
-        xlims!((-(0.5)*nα,nα))
-        ylims!((0,nα*0.866025))
+        xlims!((-(0.5)*N,N))
+        ylims!((0,N*0.866025))
     
     elseif geometry == cubic
         println("Work in progress")
@@ -262,22 +265,57 @@ end
 
 
 """
-    gifFolding(N,name,nums,nrun,geometry,nskip,gifname)
-Given a lattice size `N`, the name where the data is stored `name`, the number of monte-carlo sweeps per temperature `nums` for
-the provided data, the run number in the data `nrun`, the geometry of the data `geometry`, the number of frames to be 
-skipped in the animation `nskip`, and a name for the animation `gifname`; saves an animation to the directory from where 
+    geom_int(val)
+Given an `Int` type value for the geometry; returns the equivalent `enum` value.
+"""
+function geom_int(val)
+    enumval=square2D
+    if val == 1
+        enumval=square2D
+    elseif val == 2
+        enumval=triangular2D
+    elseif val == 3
+        enumval=cubic
+    elseif val == 4
+        enumval=fcc
+    end
+    return enumval
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+    gifFolding(name,nrun,nskip,gifname)
+Given he name of the directory where the data is stored `name`, the run number in the data `nrun`,  the number of frames to be 
+skipped in the animation `nskip`, and a name for the animation `gifname`; saves an animation of the folding process to the directory from where 
 the data comes from.
 """
-function gifFolding(N,name,nums,nrun,geometry,nskip,gifname)
+function gifFolding(name,nrun,nskip,gifname)
+ 
     pathname1="./output"*"/"*name*"/"
     pathname2="./output"*"/"*name*"/"*string(nrun)*"_"
     
     temperatures=readdlm(pathname1*"temperatures.csv",',')
     HPlist=readdlm(pathname1*"HPlist.csv",',')
     initialconf=readdlm(pathname1*"initialconf.csv",',')
+    N=Int(readdlm(pathname1*"latticesize.csv",',')[1])
+    nums=Int(readdlm(pathname1*"mc_sweeps.csv",',')[1])
+    geometry=geom_int(readdlm(pathname1*"geometry.csv",',')[1])
 
-    ns=nums*length(HPlist)
-    ft=(length(temperatures)*ns)+1 # Need to add the second term beacuse I am storing the initial configuration.
+
+    ns=nums*length(HPlist) # Number of total iterations in the simulation.
+    ft=Int((length(temperatures)*ns)+1) # Need to add the second term beacuse I am storing the initial configuration.
     times=1:nskip:ft # Number of plots to be made.
 
     # Now I need to reconstruct the visited states, according to the geometry
@@ -377,3 +415,6 @@ end
 
 
 
+# Test (Ahhh!)
+
+gifFolding("simu3",1,3,"sum1.gif")

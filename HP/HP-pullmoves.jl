@@ -11,10 +11,92 @@
 end
 
 
+@enum Amin::Int8 begin
+    Null = 0
+    h = 1
+    H = 2
+    P = 3
+    N = 4
+    X = 5
+    Y = 6
+end
+
+# Dictionary to translate between Int and aminoacid name.
+const amin_dict = Dict{Int8,Amin}(1 => h, 2 => H, 3 => P, 4 => N, 5 => X, 6 => Y)
+
+@enum PFmodelname::Int8 begin
+    HP1 = 1
+    HP2 = 2
+    HP3 = 3
+    HPNX = 4
+    hHPNX = 5
+    YhHX = 6
+end 
+
+# Dictionaries to assign positions.
+const DictHP = Dict{Amin,Int8}(H => 1, P => 2, N => 3, X => 4, h => 5)
+const DicthYhHX = Dict{Amin,Int8}(Y => 1, h => 2, H => 3, X => 4)
+
+const HPNXintMatrix = [
+    [-4 0 0 0] ; 
+    [0 1 -1 0] ; 
+    [0 -1 1 0] ; 
+    [0 0 0 0]
+]
+
+const HP1intMatrix = [
+    [-1 0] ; 
+    [0 0] 
+]
+
+const HP2intMatrix = [
+    [-3 -1] ; 
+    [-1 0] 
+]
+
+const HP3intMatrix = [
+    [-2.3 -1] ; 
+    [-1 0]  
+]
+
+const hHPNXintMatrix = [
+    [-3 0 0 0 -4] ; 
+    [0 1 -1 0 0] ; 
+    [0 -1 1 0 0] ; 
+    [0 0 0 0 0] ; 
+    [-4 0 0 0 2] 
+]
+
+const YhHXintMatrix = [
+    [0 -1 -1 2] ; 
+    [-1 2 -4 2] ; 
+    [-1 -4 -3 0] ; 
+    [2 2 0 0] 
+]
+
+
+struct PF_model
+    pf_name :: PFmodelname 
+    int_matrix :: Array{Float64,2}
+    dict :: Dict{Amin, Int8}
+end
+
+
+# Define the six available models.
+const HP1_model = PF_model(HP1,HP1intMatrix,DictHP)
+const HP2_model = PF_model(HP2,HP2intMatrix,DictHP)
+const HP3_model = PF_model(HP3,HP3intMatrix,DictHP)
+const HPNX_model = PF_model(HPNX,HPNXintMatrix,DictHP)
+const hHPNX_model = PF_model(hHPNX,hHPNXintMatrix,DictHP)
+const YhHX_model = PF_model(YhHX,YhHXintMatrix,DicthYhHX)
+
+
+
+# Deifine a protein structure.
 struct Protein
     edo :: Matrix{Int64} # This encodes the amino acidds positions within the array.
-    HPlist :: Array{Int8,1} # This encodes the protein´s amino acid sequence.
-    geometry :: Enum # This defines the type of geometry that the protein is embedded in.
+    HPlist :: Array{Amin,1} # This encodes the protein´s amino acid sequence.
+    geometry :: geometries # This defines the type of geometry that the protein is embedded in.
 end
 
 
@@ -23,6 +105,13 @@ end
         backwards=2
         nonetaken=3
     end
+
+
+
+
+
+
+
 
 
 
@@ -110,7 +199,7 @@ function makeLattice(N,edo,HPlist)
             y=edo[k,2]
             z=edo[k,3]
             x,y,z=periodicInd(red,[x,y,z],3)
-            red[x,y,z]=HPlist[k]
+            red[x,y,z]=Int(HPlist[k])
         end    
         return red
     else
@@ -119,7 +208,7 @@ function makeLattice(N,edo,HPlist)
             x=edo[k,1]
             y=edo[k,2]
             x,y=periodicInd(red,[x,y],2)
-            red[x,y]=HPlist[k]
+            red[x,y]=Int(HPlist[k])
         end    
         return red
     end

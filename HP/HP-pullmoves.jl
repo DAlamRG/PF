@@ -33,6 +33,8 @@ const amin_dict = Dict{Int8,Amin}(1 => h, 2 => H, 3 => P, 4 => N, 5 => X, 6 => Y
     YhHX = 6
 end 
 
+const pfname_dict = Dict{Int8,Amin}(1 => HP1, 2 => HP2, 3 => HP3, 4 => HPNX, 5 => hHPNX, 6 => YhHX)
+
 # Dictionaries to assign positions.
 const DictHP = Dict{Amin,Int8}(H => 1, P => 2, N => 3, X => 4, h => 5)
 const DicthYhHX = Dict{Amin,Int8}(Y => 1, h => 2, H => 3, X => 4)

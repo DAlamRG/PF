@@ -1,4 +1,5 @@
-using Plots: length
+using Base: String
+using Plots: length, push!
 # This script contains the code necessary for visualizing the outputs of the main function.
 
 
@@ -145,6 +146,38 @@ end
 
 
 
+"""
+    color_amin(HPlist)
+
+Given a list of aminoacids `HPlist`, returns a list ofthe corresponding colours. 
+"""
+function color_amin(HPlist)
+    colours=String[]
+
+    for i in 1:length(HPlist)
+        el = HPlist[i]
+        if el == h
+            push!(colours,"crimson")
+        elseif el == H
+            push!(colours,"red")
+        elseif el == P
+            push!(colours,"green")
+        elseif el == N
+            push!(colours,"lightgreen")
+        elseif el == X
+            push!(colours,"turquoise")
+        elseif el == Y
+            push!(colours,"darkorange1")
+        end
+    end
+    return colours
+end
+
+
+
+
+
+
 
 
 
@@ -157,16 +190,8 @@ Given a matrix encoding the aminoacids positions `edo`, the aminoacid sequence `
 time `time`, a temperature `temp`, and the arguments for the camera `camargs`; returns a plot displaying the protein configuration.
 """
 function visHP(edo,HPlist,N,geometry,time,temp,camargs)
-    colours=[] # Contains the colors for the two kinds of aminoacids (H = -1 = "red", P = 1 = "green").
-    for i in 1:length(HPlist) 
-        el=HPlist[i]
-        if el == 1
-            push!(colours,"green")
-        else
-            push!(colours,"red")
-        end
-    end
-
+    colours=color_amin(HPlist)
+    
 
     if geometry == square2D
         

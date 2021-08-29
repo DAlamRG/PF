@@ -133,7 +133,7 @@ function wang_landau(N,edo,HPlist,geometry,numlim2,pfmodel::PF_model)
 
             hCond = histCondtion(localenergies)
             if hCond == true 
-                println("hCond= ",hCond)
+                println("hCond = ",hCond)
             end
 
             cont2 = cont2 + 1
@@ -210,7 +210,7 @@ end
 
 
 """
-    main_WL(N,protein,ti,tf,nTs,numlim2,pfmodel::PF_model)
+    main_WL(N,protein,ti,tf,nTs,numlim2,pfmodel::PF_model,name)
  Given a lattice size `N`, a protein `protein`, an initial (final) temperature `ti` (`tf`), the number of visited temperatures `nTs`, 
  a limit number of iterations `numlim2` and an interaction model `pfmodel`, and a name where to store the data `name`; stores the 
  values of the thermodynamic variables to the desired file.   
@@ -228,15 +228,15 @@ function main_WL(N,protein,ti,tf,nTs,numlim2,pfmodel::PF_model,name::String)
     mkdir(pathname)
     writedlm(pathname*"/temperatures.csv",temps,',')
     writedlm(pathname*"/initialconf.csv",edo,',') # Perhaps a tad ineccesary.
-    writedlm(pathname*"/HPlist.csv",HPlist,',')
+    writedlm(pathname*"/HPlist.csv",Int.(HPlist),',')
     writedlm(pathname*"/latticesize.csv",N,',') # Perhaps a tad ineccesary.
     writedlm(pathname*"/geometry.csv",Int(protein.geometry),',') # Need to import the translation function.
     writedlm(pathname*"/pfmodel.csv",Int(pfmodel.pf_name),',') # Need to import the dictionary that interprets.
  
-    us = ones(Float64,l) # This array will contain the internal energy per aminoacid for each of the temperatures in `temps`.
-    cs=ones(Float64,l) 
-    Fs = ones(Float64,l)
-    Ss = ones(Float64,l)
+    us = ones(Float64,nTs) # This array will contain the internal energy per aminoacid for each of the temperatures in `temps`.
+    cs=ones(Float64,nTs) 
+    Fs = ones(Float64,nTs)
+    Ss = ones(Float64,nTs)
 
     lngE = wang_landau(N,edo,HPlist,geometry,numlim2,pfmodel) # Compute the natural logarithm of the energy densities.
     
@@ -248,7 +248,7 @@ function main_WL(N,protein,ti,tf,nTs,numlim2,pfmodel::PF_model,name::String)
     mrest = minimum(Float64[val for val in values(lngE)]) # Choose the minimum density of states.
     
     # Declare a normalized dictionary.
-    lngE = Dict{Float64,Float64}(lngE[k,1] => (lngE[k,2]-mrest) for k in 1:size(lngE)[1])
+    lngE = Dict{Float64,Float64}(k => (lngE[k]-mrest) for k in keys(lngE))
 
     for i in 1:length(temps)
         T = temps[i]

@@ -190,8 +190,8 @@ temperatures to be visited `nTs`, a number of independent temperature sweeps `nr
 configuration, an aminoacid interaction model `pfmodel`, and a name for the simulation output `name`; writes the information needed to 
 recreate the visited states after performing a simulation using the Metropolis-Hastings algorithm.
 """
-function main_met(N,nums,ti,tf,nTs,nruns,protein,pfmodel,name)
-    temperatures=range(ti,stop=tf,length=nTs) # Decalre a range of temperatures to be visited.
+function main_met(N,nums,ti,tf,nTs,nruns,protein,pfmodel::PF_model,name)
+    temperatures=range(ti,stop=tf,length=nTs) # Declare a range of temperatures to be visited.
 
     # Create the directory which will contain the dat collected trough the simulation.
     pathstring="./output/"
@@ -203,7 +203,7 @@ function main_met(N,nums,ti,tf,nTs,nruns,protein,pfmodel,name)
     writedlm(pathname*"/latticesize.csv",N,',')
     writedlm(pathname*"/mc_sweeps.csv",nums,',')
     writedlm(pathname*"/geometry.csv",Int(protein.geometry),',')
-    writedlm(pathname*"/pfmodel.csv",Int(pfmodel),',')
+    writedlm(pathname*"/pfmodel.csv",Int(pfmodel.pf_name),',')
 
     geometry=protein.geometry
 

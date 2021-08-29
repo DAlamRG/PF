@@ -95,11 +95,6 @@ end
 
 
 
-
-
-
-
-
 """
     energy(N,edo,HPlist,geometry,pfmodel)
 

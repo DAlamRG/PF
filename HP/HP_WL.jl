@@ -67,9 +67,10 @@ end
 
 
 """
-    wang_landau(N,protein,numlim2,pfmodel::PF_model)
-Given a lattice size `N`, a protein structure `protein`, a limit number of iterations `numlim2` and an interaction model `pfmodel`
-; returns a dictionary whose keys are the visited energies, and it's values are the logarithms of the energy densities.
+    wang_landau(N,protein,numlim2,pfmodel::PF_model,name)
+Given a lattice size `N`, a protein structure `protein`, a limit number of iterations `numlim2`, an interaction model `pfmodel` and
+a name where for the fle where the dta will be stored `name`; returns a dictionary whose keys are the visited energies, and 
+it's values are the logarithms of the energy densities.
 """
 function wang_landau(N,protein,numlim2,pfmodel::PF_model,name::String)
     
@@ -153,8 +154,8 @@ function wang_landau(N,protein,numlim2,pfmodel::PF_model,name::String)
     lngE = Dict{Float64,Float64}(k => (enDensityDict[k]-mrest) for k in keys(enDensityDict))
 
     # Create the directory which will contain the data collected trough the simulation.
-    pathstring="./outputWL/"
-    pathname=pathstring*name
+    pathstring = "./outputWL/"
+    pathname = pathstring*name
     mkdir(pathname)
     writedlm(pathname*"/initialconf.csv",edo,',') # Perhaps a tad ineccesary.
     writedlm(pathname*"/HPlist.csv",Int.(HPlist),',')

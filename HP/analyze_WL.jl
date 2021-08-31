@@ -1,9 +1,12 @@
 using Base: Float64
 # This script analyzes the data stored in outputWL
 
+using Plots
 using StatsBase
 using Statistics
 using DelimitedFiles
+gr()
+
 
 include("./Energy.jl")
 
@@ -65,9 +68,7 @@ end
 """
     thermo_WL(ti,tf,nTs,name)
 Given an initial/final temperature `ti/tf`, a number of temperatures `nTs` and the name for the directory where the data is stored
-`name`; returns a matrix containing the thermodynamic variables' values at each temperature.
-
-For example, the temperatures are stored in `thermo_WL[:,1]`.
+`name`; returns a tuple containing the thermodynamic variables' values at each temperature.
 """
 function thermo_WL(ti,tf,nTs,name::String)
     
@@ -75,20 +76,21 @@ function thermo_WL(ti,tf,nTs,name::String)
 
     # Obtain the data path name.
     pathstring="./outputWL/"
-    pathname=pathstring*name
+    pathname = pathstring*name
     lngE = readdlm(pathname*"/lngE.csv",',')
+    HPlist = readdlm(pathname*"/HPlist.csv",',')
+    n = length(HPlist)
 
     lngE = Dict{Float64,Float64}(lngE[i,1] => lngE[i,2] for i in 1:length(lngE[:,1]))
 
-
     # Declare arrays which will contain thermodynamic data.
     us = ones(Float64,nTs) 
-    cs=ones(Float64,nTs) 
+    cs = ones(Float64,nTs) 
     Fs = ones(Float64,nTs)
     Ss = ones(Float64,nTs)
     
-    for i in 1:length(temps)
-        T = temps[i]
+    for i in 1:length(temperatures)
+        T = temperatures[i]
         𝚬 = 0 # Average energy.
         𝚬sq = 0 # Average of the squared energy.
         𝚭 = 0 # Partition function, normalizes the average energy.
@@ -106,11 +108,27 @@ function thermo_WL(ti,tf,nTs,name::String)
         fT = -T*(λ+log(𝚭))
         entropyS = (uT-fT)/T
         
-        us[i] = uT/N # Energy per spin.
-        cs[i] = cT/N # Specific heat per spin.
-        Fs[i] = fT/N
-        Ss[i] = entropyS/N
+        us[i] = uT/n # Energy per spin.
+        cs[i] = cT/n # Specific heat per spin.
+        Fs[i] = fT/n
+        Ss[i] = entropyS/n
     end
 
     return (temperatures,us,cs,Fs,Ss)
 end
+
+
+
+
+
+
+temps,us,cs,Fs,Ss = thermo_WL(0.01,2.5,300,"simu1")
+
+
+#plot(temps,us,xlabel="T",ylabel="u(T)",label="",lw=2,color="green",alpha=0.8)
+
+#plot(temps,cs,xlabel="T",ylabel="c(T)",label="",lw=2,color="blue",alpha=0.8)
+
+#plot(temps,Fs,xlabel="T",ylabel="F(T)",label="",lw=2,color="red",alpha=0.8)
+
+#plot(temps,Ss,xlabel="T",ylabel="S(T)",label="",lw=2,color="cyan",alpha=0.8)

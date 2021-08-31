@@ -47,11 +47,11 @@ geometry; returns the values for the topological neighbors of `ind` for the give
 the indices immediately adjacent to our index.
 """
 function energyNeighbors(red,edo,ind,HPlist,geometry)
-    nnc=nearestNeighborsCoords(red,edo[ind,:],geometry) # Coordiantes of nearest neigbors to our index `ind`.
-    nn=nearestNeighbors(red,edo[ind,:],geometry) # Value of nearest neighbors to our index.
+    nnc = nearestNeighborsCoords(red,edo[ind,:],geometry) # Coordiantes of nearest neigbors to our index `ind`.
+    nn = nearestNeighbors(red,edo[ind,:],geometry) # Value of nearest neighbors to our index.
 
     if ind == 1
-        aminvals=Amin[] # Amin values of topological neighbors of inds, which are not adjacent to it.
+        aminvals = Amin[] # Amin values of topological neighbors of inds, which are not adjacent to it.
         for i in 1:length(nnc)
             if nnc[i] ≠ periodicInd(red,edo[ind+1,:],length(edo[1,:])) && nn[i] ≠ 0
                 push!(aminvals,amin_dict[nn[i]]) 
@@ -61,7 +61,7 @@ function energyNeighbors(red,edo,ind,HPlist,geometry)
         return aminvals
 
     elseif ind == length(HPlist)
-        aminvals=Amin[] # Amin values of topological neighbors of inds, which are not adjacent to it.
+        aminvals = Amin[] # Amin values of topological neighbors of inds, which are not adjacent to it.
         for i in 1:length(nnc)
             if nnc[i] ≠ periodicInd(red,edo[ind-1,:],length(edo[1,:])) && nn[i] ≠ 0
                 push!(aminvals,amin_dict[nn[i]]) 
@@ -71,7 +71,7 @@ function energyNeighbors(red,edo,ind,HPlist,geometry)
         return aminvals
 
     else
-        aminvals=Amin[] # Amin values of topological neighbors of inds, which are not adjacent to it.
+        aminvals = Amin[] # Amin values of topological neighbors of inds, which are not adjacent to it.
         for i in 1:length(nnc)
             if (nnc[i] ≠ periodicInd(red,edo[ind-1,:],length(edo[1,:]))) && (nnc[i] ≠ periodicInd(red,edo[ind+1,:],length(edo[1,:]))) && nn[i] ≠ 0
                 push!(aminvals,amin_dict[nn[i]]) 
@@ -102,10 +102,10 @@ Given a 2D/3D array size `N`, a matrix encoding the aminoacids positions `edo`, 
 geometry of the lattice and an interaction model `pfmodel`; returns the energy of the configuration.
 """
 function energy(N,edo,HPlist,geometry,pfmodel::PF_model)
-    red=makeLattice(N,edo,HPlist)
+    red = makeLattice(N,edo,HPlist)
     
     # Next, I iterate over the protein´s vertices, computing the energy contribution by each of the non-adjacent bonds, according to the model.
-    ε=0
+    ε = 0
 
     for ind in 1:length(HPlist)
         pos = periodicArr(red,edo[ind,:],length(edo[1,:]))

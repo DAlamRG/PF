@@ -275,6 +275,7 @@ function gifFolding(name,nrun,nskip,gifname)
     
     temperatures = readdlm(pathname1*"temperatures.csv",',')
     HPlist = readdlm(pathname1*"HPlist.csv",',')
+    HPlist = Amin[amin_dict[i] for i in HPlist]
     initialconf = readdlm(pathname1*"initialconf.csv",',')
     N = Int(readdlm(pathname1*"latticesize.csv",',')[1])
     nums = Int(readdlm(pathname1*"mc_sweeps.csv",',')[1])
@@ -384,4 +385,4 @@ end
 
 # Test (Ahhh!)
 
-gifFolding("simu1",1,3,"simu2_0.gif")
+gifFolding("simu1",1,3,"simu1_0.gif")

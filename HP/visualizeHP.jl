@@ -385,4 +385,4 @@ end
 
 # Test (Ahhh!)
 
-gifFolding("simu1",1,3,"simu1_0.gif")
+gifFolding("simu2",1,4,"simu2_0.gif")

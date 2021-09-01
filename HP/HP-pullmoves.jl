@@ -12,6 +12,8 @@
 end
 
 
+
+
 """
     geom_int(val)
 Given an `Int` type value for the geometry; returns the equivalent `enum` value.
@@ -828,7 +830,7 @@ function countMiddle(N,ind,edo,HPlist,geometry)
         coordinates1 = [] # Coordinates for `ind`
         coordinates2 = [] # Coordinates for `ind-1`.
 
-        for coord2 in coordinatesauxf
+        for coord2 in coordinatesaux1
             coord1 = sharedNeighborsCoords(red,coord2,edo[ind+1,:],geometry)
             append!(coordinates1,coord1)
             append!(coordinates2,Vector{Int16}[coord2 for i in 1:length(coord1)])
@@ -838,7 +840,7 @@ function countMiddle(N,ind,edo,HPlist,geometry)
         coordinatesi = [] # Coordinates for `ind`
         coordinatesii = [] # Coordinates for `ind+1`.
 
-        for coordii in coordinatesauxb
+        for coordii in coordinatesaux2
             coordi = sharedNeighborsCoords(red,coordii,edo[ind-1,:],geometry)
             append!(coordinatesi,coordi)
             append!(coordinatesii,Vector{Int16}[coordii for i in 1:length(coordi)])

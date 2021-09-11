@@ -2,6 +2,8 @@
 
 # First, declare the relevant structures for both dimensions.
 
+using LinearAlgebra
+
 
 
 @enum geometries::Int8 begin # First, define the type of geometries as an enum type.
@@ -19,19 +21,18 @@ end
 Given an `Int` type value for the geometry; returns the equivalent `enum` value.
 """
 function geom_int(val)
-    enumval=square2D
+    enumval = square2D
     if val == 1
-        enumval=square2D
+        enumval = square2D
     elseif val == 2
-        enumval=triangular2D
+        enumval = triangular2D
     elseif val == 3
-        enumval=cubic
+        enumval = cubic
     elseif val == 4
-        enumval=fcc
+        enumval = fcc
     end
     return enumval
 end
-
 
 
 
@@ -111,10 +112,11 @@ const amin_dict = Dict{Int8,Amin}(1 => h, 2 => H, 3 => P, 4 => N, 5 => X, 6 => Y
     hHPNX = 5
     YhHX = 6
     Full1 = 7
+    Full2 = 8
 end 
 
 # Dictionary to translate between Int and model name.
-const pfname_dict = Dict{Int8,PFmodelname}(1 => HP1, 2 => HP2, 3 => HP3, 4 => HPNX, 5 => hHPNX, 6 => YhHX, 7 => Full1)
+const pfname_dict = Dict{Int8,PFmodelname}(1 => HP1, 2 => HP2, 3 => HP3, 4 => HPNX, 5 => hHPNX, 6 => YhHX, 7 => Full1, 8 => Full2)
 
 
 
@@ -196,6 +198,30 @@ const Full1intMatrix = [
     [-1.196 -0.788 -1.076 -0.991 -0.771 -0.886 -1.278 -1.067 -0.374 -0.042 -0.222 -0.199 -0.018 -0.035 0.189 0.257 -0.346 -0.023 0.661 0.129]
 ]
 
+const Full2aux = [
+    [-5.44 -4.99 -5.80 -5.50 -5.83 -4.96 -4.95 -4.16 -3.57 -3.16 -3.11 -2.86 -2.59 -2.85 -2.41 -2.27 -3.60 -2.57 -1.95 -3.07] ; 
+    [0 -5.46 -6.56 -6.02 -6.41 -5.32 -5.55 -4.91 -3.94 -3.39 -3.51 -3.03 -2.95 -3.30 -2.57 -2.89 -3.98 -3.12 -2.48 -3.45] ; 
+    [0 0 -7.26 -6.84 -7.28 -6.29 -6.16 -5.66 -4.81 -4.13 -4.28 -4.02 -3.75 -4.10 -3.48 -3.56 -4.77 -3.98 -3.36 -4.25] ; 
+    [0 0 0 -6.54 -7.04 -6.05 -5.78 -5.25 -4.58 -3.78 -4.03 -3.52 -3.24 -3.67 -3.17 -3.27 -4.14 -3.63 -3.01 -3.76] ; 
+    [0 0 0 0 -7.37 -6.48 -6.14 -5.67 -4.91 -4.16 -4.34 -3.92 -3.74 -4.04 -3.40 -3.59 -4.54 -4.03 -3.37 -4.20] ; 
+    [0 0 0 0 0 -5.52 -5.18 -4.62 -4.04 -3.38 -3.46 -3.05 -2.83 -3.07 -2.48 -2.67 -3.58 -3.07 -2.49 -3.32] ; 
+    [0 0 0 0 0 0 -5.06 -4.66 -3.82 -3.42 -3.22 -2.99 -3.07 -3.11 -2.84 -2.99 -3.98 -3.41 -2.69 -3.73] ; 
+    [0 0 0 0 0 0 0 -4.17 -3.36 -3.01 -3.01 -2.78 -2.76 -2.97 -2.76 -2.79 -3.52 -3.16 -2.60 -3.19] ; 
+    [0 0 0 0 0 0 0 0 -2.72 -2.31 -2.32 -2.01 -1.84 -1.89 -1.70 -1.51 -2.41 -1.83 -1.31 -2.03] ; 
+    [0 0 0 0 0 0 0 0 0 -2.24 -2.08 -1.82 -1.74 -1.66 -1.59 -1.22 -2.15 -1.72 -1.15 -1.87] ; 
+    [0 0 0 0 0 0 0 0 0 0 -2.12 -1.96 -1.88 -1.90 -1.80 -1.74 -2.42 -1.90 -1.31 -1.90] ; 
+    [0 0 0 0 0 0 0 0 0 0 0 -1.67 -1.58 -1.49 -1.63 -1.48 -2.11 -1.62 -1.05 -1.57] ; 
+    [0 0 0 0 0 0 0 0 0 0 0 0 -1.68 -1.71 -1.68 -1.51 -2.08 -1.64 -1.21 -1.53] ; 
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 -1.54 -1.46 -1.42 -1.98 -1.80 -1.29 -1.73] ; 
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.21 -1.02 -2.32 -2.29 -1.68 -1.33] ; 
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -0.91 -2.15 -2.27 -1.80 -1.26] ; 
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3.05 -2.16 -1.35 -2.25] ; 
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.55 -0.59 -1.70] ; 
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -0.12 -0.97] ; 
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.75] 
+]
+
+const Full2intMatrix = Symmetric(Full2aux)
 
 # Declare an interaction model structure, includes the name, interaction matrix and a dictionary.
 struct PF_model
@@ -213,6 +239,7 @@ const HPNX_model = PF_model(HPNX,HPNXintMatrix,DictHP)
 const hHPNX_model = PF_model(hHPNX,hHPNXintMatrix,DictHP)
 const YhHX_model = PF_model(YhHX,YhHXintMatrix,DicthYhHX)
 const Full1_model = PF_model(Full1,Full1intMatrix,DictFull1)
+const Full2_model = PF_model(Full2,Full2intMatrix,DictFull1)
 
 
 # Deifine a protein structure.

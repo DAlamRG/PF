@@ -247,7 +247,7 @@ function main_met(N,nums,ti,tf,nTs,nruns,protein,pfmodel::PF_model,name)
                 writedlm(pathnameaux*st*"_3.csv",newcoordsT,',')
                 
                 laststate = reconstructStates(N,laststate,protein.HPlist,pulledindicesT,dirsT,newcoordsT,protein.geometry)[:,:,end] 
-                println("Temperature Progress: $k /$length(tempeartures)")
+                println("Temperature Progress: $k /$nTs")
             end
             writedlm(pathnameaux*"_energies.csv",energies,',') # Save all of the visted energies.
             println("Number of runs progress : $l /$nruns", )
@@ -296,7 +296,7 @@ function main_met(N,nums,ti,tf,nTs,nruns,protein,pfmodel::PF_model,name)
                 writedlm(pathnameaux*st*"_3_2.csv",newcoordsT[2],',')
                 
                 laststate = reconstructStates(N,laststate,protein.HPlist,pulledindicesT,dirsT,newcoordsT,protein.geometry)[:,:,end] 
-                println("Temperature Progress: $k /$length(tempeartures)")
+                println("Temperature Progress: $k /$nTs")
             end
 
             writedlm(pathnameaux*"_energies.csv",energies,',') # Save all of the visted energies.

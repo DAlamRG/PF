@@ -46,7 +46,7 @@ Given a 2D/3D array `red`, the list of aminoacid poitions `edo` , an index on th
 geometry; returns the values for the topological neighbors of `ind` for the given geometry. These list of values excludes the values of 
 the indices immediately adjacent to our index.
 """
-function energyNeighbors(red,edo,ind,HPlist,geometry)
+function energyNeighbors(red::Array{Int8,2},edo,ind::Int,HPlist::Vector{Amin},geometry::geometries)
     nnc = nearestNeighborsCoords(red,edo[ind,:],geometry) # Coordiantes of nearest neigbors to our index `ind`.
     nn = nearestNeighbors(red,edo[ind,:],geometry) # Value of nearest neighbors to our index.
 
@@ -101,11 +101,11 @@ end
 Given a 2D/3D array size `N`, a matrix encoding the aminoacids positions `edo`, an array containing the sequence of aminoacids `HPlist`,the 
 geometry of the lattice and an interaction model `pfmodel`; returns the energy of the configuration.
 """
-function energy(N,edo,HPlist,geometry,pfmodel::PF_model)
+function energy(N::Int,edo,HPlist::Vector{Amin},geometry::geometries,pfmodel::PF_model)
     red = makeLattice(N,edo,HPlist)
     
     # Next, I iterate over the protein´s vertices, computing the energy contribution by each of the non-adjacent bonds, according to the model.
-    ε = 0
+    ε = Float64(0)
 
     for ind in 1:length(HPlist)
         pos = periodicArr(red,edo[ind,:],length(edo[1,:]))

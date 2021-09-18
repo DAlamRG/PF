@@ -1,4 +1,6 @@
-using Base: String
+using Core: Vector
+using Plots: length
+using Base: String, Int8, Int16
 # This script takes the data stores in output and returns the thermodynamic analysis.
 
 using Plots
@@ -131,3 +133,14 @@ function analyze_met(name)
     for run in 1:nruns
     end
 end
+
+pathnameEnergy1 = "./output"*"/"*"simu4"*"/1_energies.csv"
+
+pathnameEnergy2 = "./output"*"/"*"simu5"*"/1_energies.csv"
+
+ens1 = readdlm(pathnameEnergy1,',')
+ens2 = readdlm(pathnameEnergy2,',')
+
+plot(1:length(ens1),ens1,color="green",lw=2,xlabel="step",ylabel="Energy per monomer",label="",alpha=0.8)
+plot!(1:length(ens2),ens2,lw=1.5,alpha=0.5,label="",color="purple")
+

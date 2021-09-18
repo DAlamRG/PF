@@ -1,4 +1,4 @@
-using Base: Int16
+using Base: Int16, Float64, String
 # This script runs a Metropolis simulation, and stores the data.
 
 using DelimitedFiles
@@ -25,7 +25,7 @@ Given a 2D/3D array size `N`, a number of Monte-Carlo sweeps `nums`, the tempera
 configuration and an aminoacid interaction model `pfmodel`; returns the final configuration and the visited energies after performing a simulation 
 using the Metropolis-Hastings algorithm.
 """
-function metropolis(N,nums,T,protein,pfmodel)  
+function metropolis(N::Int,nums::Int,T::Float64,protein::Protein,pfmodel::PF_model)  
 
     β = 1/T
     edo = protein.edo
@@ -33,66 +33,64 @@ function metropolis(N,nums,T,protein,pfmodel)
     geometry = protein.geometry
     ns = nums*length(HPlist) # Total number of iterations
 
+    # states = ones(Int16,(length(HPlist),length(edo[1,:]),ns+1)) # `states` stores the amino acids´ coordinates for each visited configuration.
+    # states[:,:,1] = edo # First coordinates are those of the input state.
+    # npullstates = zeros(Float64,ns+1) # Stores the number of pull moves for each configuration.
+    # npullstates[1] = countpull(N,edo,HPlist,geometry)[1] # Count the number of pull moves for the initial state and store it.
 
-    states = ones(Int16,(length(HPlist),length(edo[1,:]),ns+1)) # `states` stores the amino acids´ coordinates for each visited configuration.
-    states[:,:,1] = edo # First coordinates are those of the input state.
+    prev_state = edo 
+    prev_numpull = countpull(N,edo,HPlist,geometry)[1]
     
-    difes = zeros(Float64,ns) # Stores the energy difference ΔH between states.
+    # difes = zeros(Float64,ns) # Stores the energy difference ΔH between states.
     enstates = zeros(Float64,ns+1) # Stores the energy of each state visited during the simulation.
     enstates[1] = energy(N,edo,HPlist,geometry,pfmodel) # Compute the energy of the initial state and store it.
     
-    npullstates = zeros(Float64,ns+1) # Stores the number of pull moves for each configuration.
-    npullstates[1] = countpull(N,edo,HPlist,geometry)[1] # Count the number of pull moves for the initial state and store it.
+    
 
-        
     # Now, apply Metropolis-Hastings.
     
     if geometry == fcc || geometry == triangular2D
         pulledindices = zeros(Int16,ns) # Stores the moved indices. If no index is moved, the value is zero.
         newcoords = zeros(Int16,(ns,length(edo[1,:]))) # Stores the new coordinate for the pulled index. If the configuration stays the same, the new coordinate is just the original position.
-        dirs = directions[] # Store the direction in which the chain was pulled. If no pull move was peroformed, the direction is `nonetaken`.
+        dirs = Vector{directions}(undef,ns)  ##directions[] # Store the direction in which the chain was pulled. If no pull move was performed, the direction is `nonetaken`.
 
         for l in 2:ns+1 
-        
+
             # Generate a new state.
-            newedo,totalpull,indpulled,newcoord,dirpulled = pullMove(N,states[:,:,l-1],HPlist,geometry)
+            newedo,totalpull,indpulled,newcoord,dirpulled = pullMove(N,prev_state,HPlist,geometry)
             newenergy = energy(N,newedo,HPlist,geometry,pfmodel) # Compute the energy after the pull move.
             
             ΔH = newenergy-enstates[l-1] # Compute the energy difference.
             
     
             if ΔH ≤ 0 # We accept the configuration change.
-                states[:,:,l] = newedo
+                prev_state = newedo
                 enstates[l] = newenergy 
-                npullstates[l] = totalpull
-                difes[l-1] = ΔH
+                prev_numpull = totalpull
                 pulledindices[l-1] = indpulled
                 newcoords[l-1,:] = newcoord
-                push!(dirs,dirpulled)
+                dirs[l-1] = dirpulled
     
             else
                 r = rand() # Random number, sampled from uniform distribution over [0,1].
                 exponential = exp(-β*ΔH)
-                q = (npullstates[l-1])/(totalpull) # This is the quotient of number of pull moves.
+                q = (prev_numpull)/(totalpull) # This is the quotient of number of pull moves.
                 pστ = q*exponential # This determines the probability of the move in the case ΔH > 0.
     
                 if r < pστ # Accept the move.
-                    states[:,:,l] = newedo
+                    prev_state = newedo
                     enstates[l] = newenergy 
-                    npullstates[l] = totalpull
-                    difes[l-1] = ΔH
+                    prev_numpull = totalpull
                     pulledindices[l-1] = indpulled
                     newcoords[l-1,:] = newcoord
-                    push!(dirs,dirpulled)
+                    dirs[l-1] = dirpulled
     
                 else # Move is not accepted, the protein´s configuration stays the same.
-                    states[:,:,l] = copy(states[:,:,l-1])
                     enstates[l] = copy(enstates[l-1])
-                    npullstates[l] = copy(npullstates[l-1])
-                    difes[l-1] = 0
                     pulledindices[l-1] = 0
                     newcoords[l-1,:] = repeat([0],length(edo[1,:]))
-                    push!(dirs,nonetaken)
+                    dirs[l-1] = nonetaken
+                    
                 end
             end
         end
@@ -101,55 +99,52 @@ function metropolis(N,nums,T,protein,pfmodel)
         
 
     elseif geometry == square2D
-        pulledindices = zeros(Int8,ns) # Stores the moved indices. If no index is moved, the value is zero.
-        newcoords1 = zeros(Int8,(ns,length(edo[1,:]))) # Stores the new coordinate for the pulled index. 
-        newcoords2 = zeros(Int8,(ns,length(edo[1,:]))) # Stores the new coordinate for the momomer directly before/after the one being moved. 
-        dirs = directions[] # Store the direction in which the chain was pulled. If no pull move was performed, the direction is `nonetaken`.
+        pulledindices = zeros(Int16,ns) # Stores the moved indices. If no index is moved, the value is zero.
+        newcoords1 = zeros(Int16,(ns,length(edo[1,:]))) # Stores the new coordinate for the pulled index. 
+        newcoords2 = zeros(Int16,(ns,length(edo[1,:]))) # Stores the new coordinate for the momomer directly before/after the one being moved. 
+        dirs = Vector{directions}(undef,ns) # Store the direction in which the chain was pulled. If no pull move was performed, the direction is `nonetaken`.
 
         #Generate new states by performing pull moves.
         for l in 2:ns+1 
             # Generate a new state.
-            newedo,totalpull,indpulled,newcoord1,newcoord2,dirpulled = pullMove(N,states[:,:,l-1],HPlist,geometry)
+            newedo,totalpull,indpulled,newcoord1,newcoord2,dirpulled = pullMove(N,prev_state,HPlist,geometry)
             newenergy = energy(N,newedo,HPlist,geometry,pfmodel) # Compute the energy after the pull move.
             
             ΔH = newenergy-enstates[l-1] # Compute the energy difference.
             
     
             if ΔH ≤ 0 # We accept the configuration change.
-                states[:,:,l] = newedo
+                prev_state = newedo
                 enstates[l] = newenergy 
-                npullstates[l] = totalpull
-                difes[l-1] = ΔH
+                prev_numpull = totalpull
                 pulledindices[l-1] = indpulled
                 newcoords1[l-1,:] = newcoord1
                 newcoords2[l-1,:] = newcoord2
-                push!(dirs,dirpulled)
+                dirs[l-1] = dirpulled
     
     
             else
                 r = rand() # Random number, sampled from uniform distribution over [0,1].
                 exponential = exp(-β*ΔH)
-                q = (npullstates[l-1])/(totalpull) # This is the quotient of number of pull moves.
+                q = (prev_numpull)/(totalpull) # This is the quotient of number of pull moves.
                 pστ = q*exponential # This determines the probability of the move in the case ΔH > 0.
     
                 if r < pστ # Accept the move.
-                    states[:,:,l] = newedo
+                    prev_state = newedo
                     enstates[l] = newenergy 
-                    npullstates[l] = totalpull
-                    difes[l-1] = ΔH
+                    prev_numpull = totalpull
                     pulledindices[l-1] = indpulled
                     newcoords1[l-1,:] = newcoord1
                     newcoords2[l-1,:] = newcoord2
-                    push!(dirs,dirpulled)
+                    dirs[l-1] = dirpulled
+
                 else # Move is not accepted, the protein´s configuration stays the same.
-                    states[:,:,l] = copy(states[:,:,l-1])
                     enstates[l] = copy(enstates[l-1])
-                    npullstates[l] = copy(npullstates[l-1])
-                    difes[l-1] = 0
                     pulledindices[l-1] = 0
                     newcoords1[l-1,:] = repeat([0],length(edo[1,:]))
                     newcoords2[l-1,:] = repeat([0],length(edo[1,:]))
-                    push!(dirs,nonetaken)
+                    dirs[l-1] = nonetaken
+
                 end
             end
         end
@@ -190,7 +185,7 @@ temperatures to be visited `nTs`, a number of independent temperature sweeps `nr
 configuration, an aminoacid interaction model `pfmodel`, and a name for the simulation output `name`; writes the information needed to 
 recreate the visited states after performing a simulation using the Metropolis-Hastings algorithm.
 """
-function main_met(N,nums,ti,tf,nTs,nruns,protein,pfmodel::PF_model,name)
+function main_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,protein::Protein,pfmodel::PF_model,name::String)
     temperatures = range(ti,stop=tf,length=nTs) # Declare a range of temperatures to be visited.
 
     # Create the directory which will contain the dat collected trough the simulation.

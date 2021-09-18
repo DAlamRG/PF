@@ -20,7 +20,7 @@ end
     geom_int(val)
 Given an `Int` type value for the geometry; returns the equivalent `enum` value.
 """
-function geom_int(val)
+function geom_int(val::Int)
     enumval = square2D
     if val == 1
         enumval = square2D
@@ -244,8 +244,8 @@ const Full2_model = PF_model(Full2,Full2intMatrix,DictFull1)
 
 # Deifine a protein structure.
 struct Protein
-    edo :: Matrix{Int64} # This encodes the amino acidds positions within the array.
-    HPlist :: Array{Amin,1} # This encodes the protein´s amino acid sequence.
+    edo :: Matrix{Int16} # This encodes the amino acids' positions within the array.
+    HPlist :: Array{Amin,1} # This encodes the protein's amino acid sequence.
     geometry :: geometries # This defines the type of geometry that the protein is embedded in.
 end
 
@@ -263,7 +263,7 @@ end
     dirsf(vec)
 Given a vector with integer entries; returns the equivalent `dirs` vector.
 """
-function dirsf(vec)
+function dirsf(vec::Array{Int8,1})
     l = length(vec)
     dirsVec = Vector{directions}(undef,l) # Declare the equivalent `dirs` vector.
     for k in 1:l
@@ -301,20 +301,20 @@ end
 Given a 3D array `A`, a couple/triad of indices representing coordinates `indices` and a dimension `dim`; returns the indices (coordinate) for 
 the equivalent array with periodic boundary conditions.
 """
-function periodicInd(A,indices,dim)
+function periodicInd(A::Array{Int8,2},indices,dim::Int) 
     if dim == 2
         lx,ly = size(A)
         ix,iy = indices
         Ix = mod1(ix,lx)
         Iy = mod1(iy,ly)
-        return [Ix,Iy]
+        return Int16[Ix,Iy]
     else
         lx,ly,lz = size(A)
         ix,iy,iz = indices
         Ix = mod1(ix,lx)
         Iy = mod1(iy,ly)
         Iz = mod1(iz,lz)
-        return [Ix,Iy,Iz]
+        return Int16[Ix,Iy,Iz]
     end
 end
 
@@ -333,7 +333,7 @@ end
 Given a 3D array `A`, a couple/triad of indices representing coordinates `indices` and a dimension `dim`; returns the value of the position `indices` in 
 the equivalent array with periodic boundary conditions.
 """
-function periodicArr(A,indices,dim)
+function periodicArr(A::Array{Int8,2},indices,dim::Int)
     if dim == 2
         lx,ly = size(A)
         ix,iy = indices
@@ -359,31 +359,24 @@ end
 
 
 
-# Since I end up setting up the array which contains the protein sequence multiple times, I write a function to do 
-#just that.
 """
     makeLattice(N,edo,HPlist)
 
 Given a value for the lattice size `N`, a matrix encoding the aminoacids positions `edo`, and an array containing 
 the sequence of aminoacids `HPlist`; creates a 2D/3D array containing the amino acid sequence.
 """
-function makeLattice(N,edo,HPlist)
+function makeLattice(N::Int,edo,HPlist::Array{Amin,1})
     if length(edo[1,:]) == 3
         red = zeros(Int8,(N,N,N))
         for k in 1:length(HPlist)
-            x = edo[k,1]
-            y = edo[k,2]
-            z = edo[k,3]
-            x,y,z = periodicInd(red,[x,y,z],3)
+            x,y,z = periodicInd(red,edo[k,:],3)
             red[x,y,z] = Int(HPlist[k])
         end    
         return red
     else
         red = zeros(Int8,(N,N))
         for k in 1:length(HPlist)
-            x = edo[k,1]
-            y = edo[k,2]
-            x,y = periodicInd(red,[x,y],2)
+            x,y = periodicInd(red,edo[k,:],2)
             red[x,y] = Int(HPlist[k])
         end    
         return red
@@ -410,20 +403,18 @@ end
 Given a 2D/3D array `red`, a poition `inds`, and a geometry `geometry`; returns the values of the nearest 
 neighbors to the given position. 
 """
-function nearestNeighbors(red,inds,geometry)
-    A=red
+function nearestNeighbors(red::Array{Int8,2},inds,geometry::geometries)
+    A = red
 
-    if geometry == cubic 
-        x,y,z = inds
-        x,y,z = periodicInd(red,[x,y,z],3)
+    if geometry == cubic
+        x,y,z = periodicInd(red,inds,3)
         nn = Int8[periodicArr(A,[x-1,y,z],3),periodicArr(A,[x,y+1,z],3),periodicArr(A,[x+1,y,z],3),periodicArr(A,[x,y-1,z],3),
         periodicArr(A,[x,y,z+1],3),periodicArr(A,[x,y,z-1],3)] # Last two neighbors fall outside x-y plane.
         return nn
     
 
     elseif geometry == fcc # Fcc geometry has 12 topological nearest neighbors.
-        i,j,k = inds
-        i,j,k = periodicInd(red,[i,j,k],3)
+        i,j,k = periodicInd(red,inds,3)
         nn = Int8[periodicArr(A,[i+1,j,k],3),periodicArr(A,[i-1,j,k],3)
         ,periodicArr(A,[i,j+1,k],3),periodicArr(A,[i,j-1,k],3)
         ,periodicArr(A,[i,j,k+1],3),periodicArr(A,[i,j,k-1],3)
@@ -434,15 +425,13 @@ function nearestNeighbors(red,inds,geometry)
     
 
     elseif geometry == square2D
-        x,y = inds
-        x,y = periodicInd(red,[x,y],2)
+        x,y = periodicInd(red,inds,2)
         nn = Int8[periodicArr(A,[x-1,y],2),periodicArr(A,[x,y+1],2),periodicArr(A,[x+1,y],2),periodicArr(A,[x,y-1],2)]
         return nn
 
 
     elseif geometry == triangular2D
-        x,y = inds
-        x,y = periodicInd(red,[x,y],2)
+        x,y = periodicInd(red,inds,2)
         nn = Int8[periodicArr(A,[x-1,y],2),periodicArr(A,[x,y+1],2)
         ,periodicArr(A,[x+1,y+1],2),periodicArr(A,[x+1,y],2)
         ,periodicArr(A,[x,y-1],2),periodicArr(A,[x-1,y-1],2)]
@@ -465,28 +454,24 @@ end
 
 
 
-
-# Next, generalize the concept of nearest neighbors, according to the geometry.
 """
     nearestNeighborsCoords(red,inds,geometry)
 
 Given a 2D/3D array `red`,a position `inds`, and a geometry `geometry`; returns the coordinates of the nearest neighbors 
 to the given position. 
 """
-function nearestNeighborsCoords(red,inds,geometry)
-    A=red
+function nearestNeighborsCoords(red::Array{Int8,2},inds,geometry::geometries)
+    A = red
 
     if geometry == cubic 
-        x,y,z = inds
-        x,y,z = periodicInd(red,[x,y,z],3)
+        x,y,z = periodicInd(red,inds,3)
         nnc = Vector{Int16}[periodicInd(A,[x-1,y,z],3),periodicInd(A,[x,y+1,z],3),periodicInd(A,[x+1,y,z],3),periodicInd(A,[x,y-1,z],3),
         periodicInd(A,[x,y,z+1],3),periodicInd(A,[x,y,z-1],3)] # Last two neighbors fall outside x-y plane.
         return nnc
     
     
     elseif geometry == fcc # First six neighbors are in the same x-y plane. The remaining six are outside.
-        i,j,k = inds
-        i,j,k = periodicInd(red,[i,j,k],3)
+        i,j,k = periodicInd(red,inds,3)
         nnc = Vector{Int16}[periodicInd(A,[i+1,j,k],3),periodicInd(A,[i-1,j,k],3)
         ,periodicInd(A,[i,j+1,k],3),periodicInd(A,[i,j-1,k],3)
         ,periodicInd(A,[i,j,k+1],3),periodicInd(A,[i,j,k-1],3)
@@ -497,15 +482,13 @@ function nearestNeighborsCoords(red,inds,geometry)
     
 
     elseif geometry == square2D
-        x,y = inds
-        x,y = periodicInd(red,[x,y],2)
+        x,y = periodicInd(red,inds,2)
         nnc  = Vector{Int16}[periodicInd(A,[x-1,y],2),periodicInd(A,[x,y+1],2),periodicInd(A,[x+1,y],2),periodicInd(A,[x,y-1],2)]
         return nnc
 
 
     elseif geometry == triangular2D
-        x,y = inds
-        x,y = periodicInd(red,[x,y],2)
+        x,y = periodicInd(red,inds,2)
         nnc = Vector{Int16}[periodicInd(A,[x-1,y],2),periodicInd(A,[x,y+1],2)
         ,periodicInd(A,[x+1,y+1],2),periodicInd(A,[x+1,y],2)
         ,periodicInd(A,[x,y-1],2),periodicInd(A,[x-1,y-1],2)]
@@ -535,7 +518,7 @@ end
 Given a 2D/3D array `red`, a couple of coordinates `inds` and `indsp`, and a geometry; returns the coordinates for the empty shared topological
 neighbors of `inds,indsp` for the given geometry. 
 """
-function sharedNeighborsCoords(red,inds,indsp,geometry)
+function sharedNeighborsCoords(red::Array{Int8,2},inds,indsp,geometry::geometries)
     nnc = nearestNeighborsCoords(red,inds,geometry) # Coordiantes of nearest neigbors to our coord `ind`.
     nn = nearestNeighbors(red,inds,geometry) # Value of nearest neighbors to our index.
     nncp = nearestNeighborsCoords(red,indsp,geometry) # Coordiantes of nearest neigbors to our coord `indsp`.
@@ -543,7 +526,7 @@ function sharedNeighborsCoords(red,inds,indsp,geometry)
 
     sharedNC = Vector{Int16}[] # Empty shared neighbor spaces will have a value of zero.
     for i in 1:length(nnc)
-        if (nnc[i] in nncp) && (nn[i] == 0)
+        if (nnc[i] ∈ nncp) && (nn[i] == 0)
             push!(sharedNC,nnc[i]) # These are the coordinates where we might move the index corresponding to `inds`
         end
     end
@@ -572,7 +555,7 @@ end
 Given a 2D/3D array `red`, a couple of coordinates `inds` and `indsp`, and a geometry; returns the coordinates for the empty not-shared neighbor spaces by 
 `inds,indsp` for the given geometry.  
 """
-function excludedNeighborsCoords(red,inds,indsp,geometry)
+function excludedNeighborsCoords(red::Array{Int8,2},inds,indsp,geometry::geometries)
     nnc = nearestNeighborsCoords(red,inds,geometry) # Coordiantes of nearest neigbors to our index `ind`.
     nn = nearestNeighbors(red,inds,geometry) # Value of nearest neighbors to our index.
     nncp = nearestNeighborsCoords(red,indsp,geometry) # Coordiantes of nearest neigbors to our index `indsp`.
@@ -617,12 +600,13 @@ end
 Given a 2D/3D array of size `N`, a matrix encoding the aminoacids positions `edo`, an index on the chain `ind` , an array containing 
 the sequence of aminoacids `HPlist`, a direction `dir`, and a geometry; determines whether the protein structure is valid or not.
 """
-function validConf(N,ind,edo,HPlist,dir,geometry)
+function validConf(N::Int,ind,edo,HPlist::Vector{Amin},dir::directions,geometry::geometries)
     # I set up the protein within the array.
     red = makeLattice(N,edo,HPlist)
 
-    # Next, I iterate over the protein´s vertices, cheacking wether each pair of positions is in each other´s list of nearest neighbors.
+    # Next, I iterate over the protein´s vertices, checking wether each pair of positions is in each other´s list of nearest neighbors.
     # The direction in which I check the structure is determined by `dir`.
+    
     ans = true
 
     
@@ -661,7 +645,7 @@ function validConf(N,ind,edo,HPlist,dir,geometry)
 
     elseif (geometry == square2D) || (geometry == triangular2D) 
         if dir == backwards
-            if ind !=1
+            if ind != 1
                 for j in ind:-1:2
                     x1,y1 = periodicInd(red,edo[j,:],2) 
                     x2,y2 = periodicInd(red,edo[j-1,:],2) 
@@ -722,7 +706,7 @@ Given a 2D/3D array size `N`, a matrix encoding the aminoacids positions `edo`,a
 a geometry; counts the number of possible pull moves for the first amino acid, recording the possible positions to which we might move the first
 (and second in the case of the square geometry) aminoacid to.
 """
-function countFirst(N,edo,HPlist,geometry)  
+function countFirst(N::Int,edo,HPlist::Vector{Amin},geometry::geometries)  
     
     if geometry == square2D || geometry == cubic
         red = makeLattice(N,edo,HPlist)
@@ -731,8 +715,8 @@ function countFirst(N,edo,HPlist,geometry)
         coordinatesp = excludedNeighborsCoords(red,edo[ind,:],edo[ind+1,:],geometry)
 
         # Declare the arrays that will contain the coordinates for each of the different pull-moves.
-        coordinates1 = [] # These are the coordinates for `ind+1`
-        coordinates2 = [] # These are the coordinates for `ind`
+        coordinates1 = Vector{Int16}[] # These are the coordinates for `ind+1`
+        coordinates2 = Vector{Int16}[] # These are the coordinates for `ind`
         
         for coord1 in coordinatesp # This are the coordinates to which I should be able to move monomer `ind+1` into.
             coordsaux = excludedNeighborsCoords(red,coord1,edo[ind+1,:],geometry)
@@ -745,10 +729,10 @@ function countFirst(N,edo,HPlist,geometry)
         # Now we have the possible coordinates for the first two monomers, as well as the number of possible pull moves for the first 
         # amino acid. Fo easier use, I turn the arrays `coordinates1,coordinates2` into a `numpull×2` matrices.
     
-        coordinates1 = transpose(hcat(coordinates1...))
-        coordinates2 = transpose(hcat(coordinates2...))
-        return (numpull,coordinates1,coordinates2)
-
+        coordinates1p = convert(Matrix{Int16},transpose(hcat(coordinates1...)))
+        coordinates2p = convert(Matrix{Int16},transpose(hcat(coordinates2...)))
+        return (numpull,coordinates1p,coordinates2p)
+        
     
     elseif (geometry == fcc) || (geometry == triangular2D)
         red = makeLattice(N,edo,HPlist)
@@ -761,8 +745,8 @@ function countFirst(N,edo,HPlist,geometry)
         # Now we have the possible coordinates for the first monomer, as well as the number of possible pull moves for the first 
         # amino acid. Fo easier use, I turn the arrays into matrices.
 
-        coordinates1 = transpose(hcat(coordinates1...))
-        return (numpull,coordinates1)
+        coordinates1p = convert(Matrix{Int16},transpose(hcat(coordinates1...)))
+        return (numpull,coordinates1p)
     end
 end
 
@@ -789,9 +773,7 @@ end
 Given a 2D/3D array size `N`, a matrix encoding the aminoacids positions `edo`,an array containing the sequence of aminoacids `HPlist`, and
 a geometry; counts the number of possible pull moves for the last amino acid in the chain, recording the possible positions.
 """
-function countLast(N,edo,HPlist,geometry) 
-
-
+function countLast(N::Int,edo,HPlist::Vector{Amin},geometry::geometries) 
 
     if geometry == square2D || geometry == cubic
         red = makeLattice(N,edo,HPlist)
@@ -800,8 +782,8 @@ function countLast(N,edo,HPlist,geometry)
         coordinatesp = excludedNeighborsCoords(red,edo[ind,:],edo[ind-1,:],geometry)
 
         # Declare the arrays that will contain the coordinates for each of the different pull-moves.
-        coordinates1 = [] # These are the coordinates for `ind-1`
-        coordinates2 = [] # These are the coordinates for `ind`
+        coordinates1 = Vector{Int16}[] # These are the coordinates for `ind-1`
+        coordinates2 = Vector{Int16}[] # These are the coordinates for `ind`
         
         for coord1 in coordinatesp # This are the coordinates to which I should be able to move monomer `ind-1` into.
             coordsaux = excludedNeighborsCoords(red,coord1,edo[ind-1,:],geometry)
@@ -814,9 +796,9 @@ function countLast(N,edo,HPlist,geometry)
         # Now we have the possible coordinates for the last two monomers, as well as the number of possible pull moves for the last 
         # amino acid. Fo easier use, I turn the arrays `coordinates1,coordinates2` into a `numpull×2` matrices.
     
-        coordinates1 = transpose(hcat(coordinates1...))
-        coordinates2 = transpose(hcat(coordinates2...))
-        return (numpull,coordinates1,coordinates2)
+        coordinates1p = convert(Matrix{Int16},transpose(hcat(coordinates1...)))
+        coordinates2p = convert(Matrix{Int16},transpose(hcat(coordinates2...)))
+        return (numpull,coordinates1p,coordinates2p)
 
     
     elseif (geometry == fcc) || (geometry == triangular2D)
@@ -830,8 +812,8 @@ function countLast(N,edo,HPlist,geometry)
         # Now we have the possible coordinates for the last monomer, as well as the number of possible pull moves for the last
         # amino acid. Fo easier use, I turn the arrays into matrices.
 
-        coordinates1 = transpose(hcat(coordinates1...))
-        return (numpull,coordinates1)
+        coordinates1p = convert(Matrix{Int16},transpose(hcat(coordinates1...)))
+        return (numpull,coordinates1p)
     end
 end
 
@@ -858,7 +840,7 @@ Given a 2D/3D array size `N`, an index on the chain `ind`, a matrix encoding the
 the sequence of aminoacids `HPlist`, and a geometry; counts the number of possible pull moves for the `ìnd`-th aminoacid, and 
 stores the possible coordinates.
 """
-function countMiddle(N,ind,edo,HPlist,geometry)
+function countMiddle(N::Int,ind,edo,HPlist::Vector{Amin},geometry::geometries)
     
     if (geometry == fcc) || (geometry == triangular2D)
         # I set up the protein within the array.
@@ -879,10 +861,10 @@ function countMiddle(N,ind,edo,HPlist,geometry)
         numpull = length(coordinates1)+length(coordinatesi)
 
         # I turn the 1 dimensional arrays into matrices for easier use.
-        coordinates1 = transpose(hcat(coordinates1...))
-        coordinatesi = transpose(hcat(coordinatesi...))
+        coordinates1p = convert(Matrix{Int16},transpose(hcat(coordinates1...)))
+        coordinatesip = convert(Matrix{Int16},transpose(hcat(coordinatesi...)))
 
-        return (numpull,coordinates1,coordinatesi) # Returns everything neccesary to reproduce the final configuration.
+        return (numpull,coordinates1p,coordinatesip) # Returns everything neccesary to reproduce the final configuration.
 
 
     elseif geometry == square2D
@@ -903,8 +885,8 @@ function countMiddle(N,ind,edo,HPlist,geometry)
         end
 
         # First consider the case when we are pulling the protein backwards (as in pulling only the preceeding monomers to our index `ind`).
-        coordinates1 = [] # Coordinates for `ind`
-        coordinates2 = [] # Coordinates for `ind-1`.
+        coordinates1 = Vector{Int16}[] # Coordinates for `ind`
+        coordinates2 = Vector{Int16}[] # Coordinates for `ind-1`.
 
         for coord2 in coordinatesaux1
             coord1 = sharedNeighborsCoords(red,coord2,edo[ind+1,:],geometry)
@@ -913,8 +895,8 @@ function countMiddle(N,ind,edo,HPlist,geometry)
         end
 
         # Now consider the case when  we are pulling the chain forwards.
-        coordinatesi = [] # Coordinates for `ind`
-        coordinatesii = [] # Coordinates for `ind+1`.
+        coordinatesi = Vector{Int16}[] # Coordinates for `ind`
+        coordinatesii = Vector{Int16}[] # Coordinates for `ind+1`.
 
         for coordii in coordinatesaux2
             coordi = sharedNeighborsCoords(red,coordii,edo[ind-1,:],geometry)
@@ -925,12 +907,12 @@ function countMiddle(N,ind,edo,HPlist,geometry)
         numpull = length(coordinates1)+length(coordinatesi)
 
         # I turn the 1 dimensional arrays into matrices for easier use.
-        coordinates1 = transpose(hcat(coordinates1...))
-        coordinates2 = transpose(hcat(coordinates2...))
-        coordinatesi = transpose(hcat(coordinatesi...))
-        coordinatesii = transpose(hcat(coordinatesii...))
+        coordinates1p = convert(Matrix{Int16},transpose(hcat(coordinates1...)))
+        coordinates2p = convert(Matrix{Int16},transpose(hcat(coordinates2...)))
+        coordinatesip = convert(Matrix{Int16},transpose(hcat(coordinatesi...)))
+        coordinatesiip = convert(Matrix{Int16},transpose(hcat(coordinatesii...)))
 
-        return (numpull,coordinates1,coordinates2,coordinatesi,coordinatesii) # Returns everything neccesary to reproduce the final configuration.
+        return (numpull,coordinates1p,coordinates2p,coordinatesip,coordinatesiip) # Returns everything neccesary to reproduce the final configuration.
     end
 
 end
@@ -961,7 +943,7 @@ Given a 2D/3D array size `N`, a matrix encoding the aminoacids positions `edo`, 
 the sequence of aminoacids `HPlist`, and a geometry; counts all of the possible pull moves. It also outputs the necessary
 coordinates to perform the listed moves.
 """
-function countpull(N,edo,HPlist,geometry)
+function countpull(N::Int,edo,HPlist::Vector{Amin},geometry::geometries)
 
     if (geometry == fcc) || (geometry == triangular2D)
         # Count the moves and store the coordinates for the first monomer.
@@ -978,8 +960,8 @@ function countpull(N,edo,HPlist,geometry)
         npullpindexb = Int16[] # Stores the number of backwards pull moves for each middle index.
         # Length may be shorter than the number of middle indices given that I only store the coordinates for non empty arrays.
         npullpindexf = Int16[] # Stores the number of forwards pull moves for each middle index.
-        middlecoords1 = [] # Contains the coordinates for `ind`, where `ind` is an index from the middle of the chain.
-        middlecoords3 = [] # Contains the coordinates for `ind` when the chain is pulled forwards.
+        middlecoords1 = Matrix{Int16}[] # Contains the coordinates for `ind`, where `ind` is an index from the middle of the chain.
+        middlecoords3 = Matrix{Int16}[] # Contains the coordinates for `ind` when the chain is pulled forwards.
 
         for j in 2:length(HPlist)-1
             tj,coords5,coords7 = countMiddle(N,j,edo,HPlist,geometry)
@@ -1021,10 +1003,10 @@ function countpull(N,edo,HPlist,geometry)
         npullpindexb = Int16[] # Stores the number of backwards pull moves for each middle index.
         # Length may be shorter than the number of middle indices given that I only store the coordinates for non empty arrays.
         npullpindexf = Int16[] # Stores the number of forwards pull moves for each middle index.
-        middlecoords1 = [] # Contains the coordinates for `ind`, where `ind` is an index from the middle of the chain.
-        middlecoords2 = [] # Contains the coordinates for `ind-1`.
-        middlecoords3 = [] # Contains the coordinates for `ind`.
-        middlecoords4 = [] # Contains the coordinates for `ind+1`.
+        middlecoords1 = Matrix{Int16}[] # Contains the coordinates for `ind`, where `ind` is an index from the middle of the chain.
+        middlecoords2 = Matrix{Int16}[] # Contains the coordinates for `ind-1`.
+        middlecoords3 = Matrix{Int16}[] # Contains the coordinates for `ind`.
+        middlecoords4 = Matrix{Int16}[] # Contains the coordinates for `ind+1`.
         for j in 2:length(HPlist)-1
             tj,coords5,coords6,coords7,coords8 = countMiddle(N,j,edo,HPlist,geometry)
             # I have all the neccesary information. But first I need to check if the given index
@@ -1142,8 +1124,7 @@ the sequence of aminoacids `HPlist`, and a geometry; chooses an index and perfor
 The function also returns the final state `newedo`, a number of possible pull moves `totalpull` for the 
 initial configuration, the position of the pulled monomer `indpulled`, and the new position for the pulled index `newcoord`.
 """
-function pullMove(N,edo,HPlist,geometry)   
-
+function pullMove(N::Int,edo,HPlist::Vector{Amin},geometry::geometries)   
 
     if geometry == fcc || geometry == triangular2D
         # `newedo` will contain the amino acids´ final positions.
@@ -1188,8 +1169,7 @@ function pullMove(N,edo,HPlist,geometry)
             if stateconf == false
                 for k in (ind+1):length(HPlist)
                     if stateconf == false
-                        np = edo[k-1,:] # New position.
-                        newedo[k,:] = np 
+                        newedo[k,:] = edo[k-1,:] # New position. 
                         stateconf = validConf(N,k,newedo,HPlist,forwards,geometry) # Check whether the new configuration is valid.
                     else
                         break
@@ -1213,8 +1193,7 @@ function pullMove(N,edo,HPlist,geometry)
             if stateconf == false
                 for k in (ind-1):-1:1
                     if stateconf == false
-                        np = edo[k+1,:] # New position.
-                        newedo[k,:] = np 
+                        newedo[k,:] = edo[k+1,:] # New position. 
                         stateconf = validConf(N,k,newedo,HPlist,backwards,geometry) # Check whether the new configuration is valid.
                     else
                         break
@@ -1238,8 +1217,7 @@ function pullMove(N,edo,HPlist,geometry)
             if stateconf == false
                 for k in (indm-1):-1:1
                     if stateconf == false
-                        np = edo[k+1,:] # New position.
-                        newedo[k,:] = np 
+                        newedo[k,:] = edo[k+1,:] # New position.
                         stateconf = validConf(N,k,newedo,HPlist,backwards,geometry) # Check whether the new configuration is valid.
                     else
                         break
@@ -1262,8 +1240,7 @@ function pullMove(N,edo,HPlist,geometry)
             if stateconf ==  false
                 for k in (indm+1):length(HPlist)
                     if stateconf == false
-                        np = edo[k-1,:] # New position. 
-                        newedo[k,:] = np 
+                        newedo[k,:] = edo[k-1,:] # New position. 
                         stateconf = validConf(N,k,newedo,HPlist,forwards,geometry) # Check whether the new configuration is valid.
                     else
                         break
@@ -1325,8 +1302,7 @@ function pullMove(N,edo,HPlist,geometry)
             stateconf = validConf(N,ind+1,newedo,HPlist,forwards,geometry)
             for k in ind+2:length(HPlist)
                 if stateconf == false
-                    np = edo[k-2,:] # New position.
-                    newedo[k,:] = np 
+                    newedo[k,:] = edo[k-2,:] # New position. 
                     stateconf = validConf(N,k,newedo,HPlist,forwards,geometry) # Check whether the new configuration is valid.
                 else
                     break
@@ -1349,8 +1325,7 @@ function pullMove(N,edo,HPlist,geometry)
             stateconf = validConf(N,ind-1,newedo,HPlist,backwards,geometry) 
             for k in ind:-1:3
                 if stateconf == false
-                    np = edo[k,:] # New position.
-                    newedo[k-2,:] = np 
+                    newedo[k-2,:] = edo[k,:] 
                     stateconf = validConf(N,k-2,newedo,HPlist,backwards,geometry) # Check whether the new configuration is valid.
                 else
                     break
@@ -1376,8 +1351,7 @@ function pullMove(N,edo,HPlist,geometry)
             if stateconf == false
                 for k in (indm-2):-1:1
                     if stateconf == false
-                        np = edo[k+2,:] # New position.
-                        newedo[k,:] = np 
+                        newedo[k,:] = edo[k+2,:] # New position.
                         stateconf = validConf(N,k,newedo,HPlist,backwards,geometry) # Check whether the new configuration is valid.
                     else
                         break
@@ -1407,8 +1381,7 @@ function pullMove(N,edo,HPlist,geometry)
             if stateconf ==  false
                 for k in (indm+2):length(HPlist)
                     if stateconf == false
-                        np = edo[k-2,:] # New position.
-                        newedo[k,:] = np 
+                        newedo[k,:] = edo[k-2,:] # New position. 
                         stateconf = validConf(N,k,newedo,HPlist,forwards,geometry) # Check whether the new configuration is valid.
                     else
                         break
@@ -1453,7 +1426,7 @@ Given a lattice size `N`, a matrix encoding the aminoacids initial position `edo
 pulled indices `pulledindices`, an array containing the direction in which the chain was pulled `dirs`, a matrix containing the new positions 
 for the pulled indices `newcoords`, a geometry; returns a multidimensional array containing the states at each point of the Metropolis scheme.
 """
-function reconstructStates(N,edo,HPlist,pulledindices,dirs,newcoords,geometry)
+function reconstructStates(N::Int,edo,HPlist::Vector{Amin},pulledindices,dirs::Vector{directions},newcoords,geometry::geometries)
 
     if geometry == fcc || geometry == triangular2D
 
@@ -1462,7 +1435,7 @@ function reconstructStates(N,edo,HPlist,pulledindices,dirs,newcoords,geometry)
         else
             dim = 2
         end
-        reconstructedSates = zeros(Int8,(length(HPlist),dim,length(pulledindices)+1))
+        reconstructedSates = zeros(Int16,(length(HPlist),dim,length(pulledindices)+1))
         reconstructedSates[:,:,1] = edo
         for l in 2:length(pulledindices)+1
             ind = pulledindices[l-1]
@@ -1480,8 +1453,7 @@ function reconstructStates(N,edo,HPlist,pulledindices,dirs,newcoords,geometry)
                     if stateconf == false
                         for k in (ind+1):length(HPlist)
                             if stateconf == false
-                                np = refedo[k-1,:] # New position.
-                                newedo[k,:] = np 
+                                newedo[k,:] = refedo[k-1,:] # New position. 
                                 stateconf = validConf(N,k,newedo,HPlist,forwards,geometry) # Check whether the new configuration is valid.
                             else
                                 break
@@ -1497,8 +1469,7 @@ function reconstructStates(N,edo,HPlist,pulledindices,dirs,newcoords,geometry)
                     if stateconf == false
                         for k in (ind-1):-1:1
                             if stateconf == false
-                                np = refedo[k+1,:] # New position.
-                                newedo[k,:] = np 
+                                newedo[k,:] = refedo[k+1,:] # New position. 
                                 stateconf = validConf(N,k,newedo,HPlist,backwards,geometry) # Check whether the new configuration is valid.
                             else
                                 break
@@ -1517,8 +1488,7 @@ function reconstructStates(N,edo,HPlist,pulledindices,dirs,newcoords,geometry)
                         if stateconf == false
                             for k in (ind-1):-1:1
                                 if stateconf == false
-                                    np = refedo[k+1,:] # New position.
-                                    newedo[k,:] = np 
+                                    newedo[k,:] = refedo[k+1,:] # New position. 
                                     stateconf = validConf(N,k,newedo,HPlist,dir,geometry) # Check whether the new configuration is valid.
                                 else
                                     break
@@ -1532,8 +1502,7 @@ function reconstructStates(N,edo,HPlist,pulledindices,dirs,newcoords,geometry)
                         if stateconf ==  false
                             for k in (ind+1):length(HPlist)
                                 if stateconf == false
-                                    np = refedo[k-1,:] # New position.
-                                    newedo[k,:] = np 
+                                    newedo[k,:] = refedo[k-1,:] # New position. 
                                     stateconf = validConf(N,k,newedo,HPlist,dir,geometry) # Check whether the new configuration is valid.
                                 else
                                     break
@@ -1554,7 +1523,7 @@ function reconstructStates(N,edo,HPlist,pulledindices,dirs,newcoords,geometry)
 
 
     elseif geometry == square2D
-        reconstructedSates = zeros(Int8,(length(HPlist),2,length(pulledindices)+1))
+        reconstructedSates = zeros(Int16,(length(HPlist),2,length(pulledindices)+1))
         reconstructedSates[:,:,1] = edo
         for l in 2:length(pulledindices)+1
             ind = pulledindices[l-1]
@@ -1574,8 +1543,7 @@ function reconstructStates(N,edo,HPlist,pulledindices,dirs,newcoords,geometry)
                     if stateconf == false
                         for k in (ind+2):length(HPlist)
                             if stateconf == false
-                                np = refedo[k-2,:] # New position.
-                                newedo[k,:] = np 
+                                newedo[k,:] = refedo[k-2,:] # New position. 
                                 stateconf = validConf(N,k,newedo,HPlist,forwards,geometry) # Check whether the new configuration is valid.
                             else
                                 break
@@ -1592,8 +1560,7 @@ function reconstructStates(N,edo,HPlist,pulledindices,dirs,newcoords,geometry)
                     if stateconf == false
                         for k in (ind-2):-1:1
                             if stateconf == false
-                                np = refedo[k+2,:] # New position.
-                                newedo[k,:] = np 
+                                newedo[k,:] = refedo[k+2,:] # New position.
                                 stateconf = validConf(N,k,newedo,HPlist,backwards,geometry) # Check whether the new configuration is valid.
                             else
                                 break
@@ -1605,15 +1572,14 @@ function reconstructStates(N,edo,HPlist,pulledindices,dirs,newcoords,geometry)
     
     
                 else
-                    dir=dirs[l-1]
+                    dir = dirs[l-1]
                     if dir == backwards
                         newedo[ind-1,:] = newcoords[2][l-1,:]
                         stateconf = validConf(N,ind-1,newedo,HPlist,dir,geometry)
                         if stateconf == false
                             for k in (ind-2):-1:1
                                 if stateconf == false
-                                    np = refedo[k+2,:] # New position.
-                                    newedo[k,:] = np 
+                                    newedo[k,:] = refedo[k+2,:] # New position.
                                     stateconf = validConf(N,k,newedo,HPlist,dir,geometry) # Check whether the new configuration is valid.
                                 else
                                     break
@@ -1628,8 +1594,7 @@ function reconstructStates(N,edo,HPlist,pulledindices,dirs,newcoords,geometry)
                         if stateconf ==  false
                             for k in (ind+2):length(HPlist)
                                 if stateconf == false
-                                    np = refedo[k-2,:] # New position.
-                                    newedo[k,:] = np 
+                                    newedo[k,:] = refedo[k-2,:] # New position. 
                                     stateconf = validConf(N,k,newedo,HPlist,dir,geometry) # Check whether the new configuration is valid.
                                 else
                                     break
@@ -1651,3 +1616,22 @@ function reconstructStates(N,edo,HPlist,pulledindices,dirs,newcoords,geometry)
 end
 
 
+
+
+
+
+
+
+
+
+# seq_64 = Amin[H,H,H,H,H,H,H,H,H,H,H,H,P,H,P,H,P,P,H,H,P,P,H,H,P,P,H,P,P,H,H,P,P,H,H,P,P,H,P,P,H,H,P,P,H,H,P,P,H,P,H,P,H,H,H,H,H,H,H,H,H,H,H,H]
+
+# testProtein64 = Protein(hcat(Int16[10 for i in 1:64],Int16(1+6):Int16(64+6)),seq_64,square2D)
+
+# redprueba = makeLattice(80,testProtein64.edo,testProtein64.HPlist)
+
+# @show(periodicInd(redprueba,testProtein64.edo[1,:],2))
+
+# @show(nearestNeighborsCoords(redprueba,testProtein64.edo[1,:],testProtein64.geometry))
+
+# countpull(80,testProtein64.edo,testProtein64.HPlist,testProtein64.geometry)

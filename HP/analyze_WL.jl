@@ -1,4 +1,5 @@
-using Base: Float64
+using Core: Vector
+using Base: Float64, Int16, Int8
 # This script analyzes the data stored in outputWL
 
 using Plots
@@ -19,7 +20,7 @@ include("./Energy.jl")
 Given a dictionary `lngE` whose keys(values) are energies(log of energy densities), and a temperature `T`; returns the largest value
 λ of the differences between energy density `ln(g(E))` and `βE` (i.e. `max{log(g(Eᵢ))-βE}`).
 """
-function determineλ(lngE,T)
+function determineλ(lngE::Dict{Float64,Float64},T::Float64)
     β = 1/T
     difs = Float64[]
     for el in lngE

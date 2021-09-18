@@ -12,11 +12,11 @@ include("./HP-model.jl")
 
 # testProtein=Protein([[10 5];[10 6];[10 7];[10 8];[10 9];[10 10];[10 11];[10 12];[10 13]],[P,H,N,H,P,X,H,H,P],triangular2D
 
-sec64 = Amin[H,H,H,H,H,H,H,H,H,H,H,H,P,H,P,H,P,P,H,H,P,P,H,H,P,P,H,P,P,H,H,P,P,H,H,P,P,H,P,P,H,H,P,P,H,H,P,P,H,P,H,P,H,H,H,H,H,H,H,H,H,H,H,H]
+seq_64 = Amin[H,H,H,H,H,H,H,H,H,H,H,H,P,H,P,H,P,P,H,H,P,P,H,H,P,P,H,P,P,H,H,P,P,H,H,P,P,H,P,P,H,H,P,P,H,H,P,P,H,P,H,P,H,H,H,H,H,H,H,H,H,H,H,H]
 
-testProtein64 = Protein(hcat([10 for i in 1:64],1+6:64+6),sec64,square2D)
+testProtein64 = Protein(hcat(Int16[10 for i in 1:64],Int16(1+6):Int16(64+6)),seq_64,square2D)
 
-main_met(80,100,0.01,0.7,14,3,testProtein64,HP1_model,"simu3")
+@time main_met(80,100,0.01,1.0,100,1,testProtein64,HP1_model,"simu3")
 # wang_landau(21,testProtein,200,HPNX_model,"simu1")
 
 

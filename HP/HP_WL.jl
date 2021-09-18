@@ -20,7 +20,7 @@ include("./Energy.jl")
 Given lattice size `N`, an initial/final configuration `edoi/edof`, a list containing the protein's aminoacids `HPlist`,
 a geometry `geometry` and an interaction model `pfmodel`; returns the energy difference between the intial and final configurations.
 """
-function energyDif(N,edoi,edof,HPlist,geometry,pfmodel::PF_model)
+function energyDif(N::Int,edoi::Array{Int16,2},edof::Array{Int16,2},HPlist::Vector{Amin},geometry::geometries,pfmodel::PF_model)
     ΔE = energy(N,edoi,HPlist,geometry,pfmodel)-energy(N,edof,HPlist,geometry,pfmodel)
     return ΔE
 end
@@ -72,7 +72,7 @@ Given a lattice size `N`, a protein structure `protein`, a limit number of itera
 a name where for the fle where the dta will be stored `name`; returns a dictionary whose keys are the visited energies, and 
 it's values are the logarithms of the energy densities.
 """
-function wang_landau(N,protein,numlim2,pfmodel::PF_model,name::String)
+function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name::String)
     
     edo = protein.edo
     HPlist = protein.HPlist
@@ -80,22 +80,22 @@ function wang_landau(N,protein,numlim2,pfmodel::PF_model,name::String)
 
     mcsweep = length(edo) # Monte Carlo step size.
     
-    lnf = 1 # Initial value of updating value `log(f)`.
+    lnf = 1.0 # Initial value of updating value `log(f)`.
     enDensityDict = Dict{Float64,Float64}(0 => 0) # Dictionary for the energy densities. Keys are all the possible energy values
     # for the system (I start with just one since the range of possible energies depends entirely on the aminoacid list/geometry/interaction model).
     # Values are the energy density (actually log(g(Eᵢ)) ), where g(Eᵢ) is the energy density.
 
     cont1 = 1
     for l in 1:27 # This is the number of iterations it takes to make lnf sufficiently small.
-        cont1 = cont1+1 # Update the counter.
         println("cont1= $cont1 /27")
-        localenergies=Dict{Float64,Int64}() # Stores the number of times each energy is visted during the current iteration. This is my "histogram".
+        cont1 = cont1+1 # Update the counter.
+        localenergies = Dict{Float64,Int64}() # Stores the number of times each energy is visted during the current iteration. This is my "histogram".
         
         hCond = false # True if the histogram is flat enough.
         cont2 = 1
         while (cont2 ≤ numlim2) && (hCond == false)
 
-            for k in 1:(30*mcsweep) # Perform 10^3 Monte Carlo sweeps.
+            for k in 1:(50*mcsweep) # Perform 10^3 Monte Carlo sweeps.
                 
                 e1 = energy(N,edo,HPlist,geometry,pfmodel) # Initial energy.
                 # Generate new state by performing a pull-move.

@@ -89,7 +89,7 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
     for l in 1:27 # This is the number of iterations it takes to make lnf sufficiently small.
         println("cont1= $cont1 /27")
         cont1 = cont1+1 # Update the counter.
-        localenergies = Dict{Float64,Int64}() # Stores the number of times each energy is visted during the current iteration. This is my "histogram".
+        localenergies = Dict{Float64,Int64}(k => 0 for k in keys(enDensityDict)) # Stores the number of times each energy is visted during the current iteration. This is my "histogram".
         
         hCond = false # True if the histogram is flat enough.
         cont2 = 1
@@ -166,7 +166,4 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
     
     println("WL simulation completed.")
 end
-
-
-
 

@@ -21,3 +21,4 @@ testProtein64 = Protein(hcat(Int16[10 for i in 1:64],Int16(1+6):Int16(64+6)),seq
 
 
 
+

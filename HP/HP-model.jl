@@ -1,5 +1,5 @@
 using Base: Int16, Float64, String
-# This script runs a Metropolis simulation, and stores the data.
+# This script performs a Metropolis simulation, and stores the data.
 
 using DelimitedFiles
 
@@ -21,9 +21,9 @@ include("./Energy.jl")
 """
     metropolis(N,nums,T,protein,pfmodel) 
 
-Given a 2D/3D array size `N`, a number of Monte-Carlo sweeps `nums`, the temperature T, a protein structure `protein` encoding the protein´s 
-configuration and an aminoacid interaction model `pfmodel`; returns the final configuration and the visited energies after performing a simulation 
-using the Metropolis-Hastings algorithm.
+Given a 2D/3D array size `N`, a number of Monte-Carlo sweeps `nums`, the temperature T, a protein structure `protein` encoding the protein's 
+configuration and an aminoacid interaction model `pfmodel`; returns the information necessay to reproduce the visited configuration during the 
+simulation (using the Metropolis-Hastings algorithm) as well as the visited energies.
 """
 function metropolis(N::Int,nums::Int,T::Float64,protein::Protein,pfmodel::PF_model)  
 
@@ -33,26 +33,19 @@ function metropolis(N::Int,nums::Int,T::Float64,protein::Protein,pfmodel::PF_mod
     geometry = protein.geometry
     ns = nums*length(HPlist) # Total number of iterations
 
-    # states = ones(Int16,(length(HPlist),length(edo[1,:]),ns+1)) # `states` stores the amino acids´ coordinates for each visited configuration.
-    # states[:,:,1] = edo # First coordinates are those of the input state.
-    # npullstates = zeros(Float64,ns+1) # Stores the number of pull moves for each configuration.
-    # npullstates[1] = countpull(N,edo,HPlist,geometry)[1] # Count the number of pull moves for the initial state and store it.
-
-    prev_state = edo 
-    prev_numpull = countpull(N,edo,HPlist,geometry)[1]
+    prev_state = edo # This variable stores the previous configuration.
+    prev_numpull = countpull(N,edo,HPlist,geometry)[1] # This variable stores the number of possible pull moves for the previous iteration.
     
-    # difes = zeros(Float64,ns) # Stores the energy difference ΔH between states.
     enstates = zeros(Float64,ns+1) # Stores the energy of each state visited during the simulation.
     enstates[1] = energy(N,edo,HPlist,geometry,pfmodel) # Compute the energy of the initial state and store it.
     
     
-
     # Now, apply Metropolis-Hastings.
     
     if geometry == fcc || geometry == triangular2D
         pulledindices = zeros(Int16,ns) # Stores the moved indices. If no index is moved, the value is zero.
-        newcoords = zeros(Int16,(ns,length(edo[1,:]))) # Stores the new coordinate for the pulled index. If the configuration stays the same, the new coordinate is just the original position.
-        dirs = Vector{directions}(undef,ns)  ##directions[] # Store the direction in which the chain was pulled. If no pull move was performed, the direction is `nonetaken`.
+        newcoords = zeros(Int16,(ns,length(edo[1,:]))) # Stores the new coordinate for the pulled index. If the configuration stays the same, the new coordinate is just zeros.
+        dirs = fill(nonetaken,ns) # Store the direction in which the chain was pulled. If no pull move was performed, the direction is `nonetaken`.
 
         for l in 2:ns+1 
 
@@ -87,9 +80,6 @@ function metropolis(N::Int,nums::Int,T::Float64,protein::Protein,pfmodel::PF_mod
     
                 else # Move is not accepted, the protein´s configuration stays the same.
                     enstates[l] = copy(enstates[l-1])
-                    pulledindices[l-1] = 0
-                    newcoords[l-1,:] = repeat([0],length(edo[1,:]))
-                    dirs[l-1] = nonetaken
                     
                 end
             end
@@ -102,7 +92,7 @@ function metropolis(N::Int,nums::Int,T::Float64,protein::Protein,pfmodel::PF_mod
         pulledindices = zeros(Int16,ns) # Stores the moved indices. If no index is moved, the value is zero.
         newcoords1 = zeros(Int16,(ns,length(edo[1,:]))) # Stores the new coordinate for the pulled index. 
         newcoords2 = zeros(Int16,(ns,length(edo[1,:]))) # Stores the new coordinate for the momomer directly before/after the one being moved. 
-        dirs = Vector{directions}(undef,ns) # Store the direction in which the chain was pulled. If no pull move was performed, the direction is `nonetaken`.
+        dirs = fill(nonetaken,ns) # Store the direction in which the chain was pulled. If no pull move was performed, the direction is `nonetaken`.
 
         #Generate new states by performing pull moves.
         for l in 2:ns+1 
@@ -140,10 +130,6 @@ function metropolis(N::Int,nums::Int,T::Float64,protein::Protein,pfmodel::PF_mod
 
                 else # Move is not accepted, the protein´s configuration stays the same.
                     enstates[l] = copy(enstates[l-1])
-                    pulledindices[l-1] = 0
-                    newcoords1[l-1,:] = repeat([0],length(edo[1,:]))
-                    newcoords2[l-1,:] = repeat([0],length(edo[1,:]))
-                    dirs[l-1] = nonetaken
 
                 end
             end
@@ -176,7 +162,7 @@ end
 
 
 
- # Next, I write a function which performs multiple simulations over an array of temperatures, and saves the information generated.
+ # Next, I write a function which performs multiple simulations over an array of temperatures, and saves the generated info.
  """
      main_met(N,nums,ti,tf,nTs,nruns,protein,pfmodel,name)
 
@@ -187,6 +173,7 @@ recreate the visited states after performing a simulation using the Metropolis-H
 """
 function main_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,protein::Protein,pfmodel::PF_model,name::String)
     temperatures = range(ti,stop=tf,length=nTs) # Declare a range of temperatures to be visited.
+    ns = nums*length(protein.HPlist)
 
     # Create the directory which will contain the dat collected trough the simulation.
     pathstring = "./output/"
@@ -206,7 +193,7 @@ function main_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,p
     if geometry == fcc || geometry == triangular2D
         # Now, perform a Metropolis-Hastings simulation for each temperature in `temperatures`. Sweep the tempeartures `nruns` times.
         for l in 1:nruns
-            energies = Float64[] # Energies for the current run.
+            energies = zeros(Float64,Int((ns*length(temperatures))+1)) #Float64[] # Energies for the current run.
         
             # Perform the first simulation.
             datatemp1 = metropolis(N,nums,temperatures[end],protein,pfmodel)
@@ -214,7 +201,8 @@ function main_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,p
             dirsT = datatemp1[2]
             newcoordsT = datatemp1[3]
             laststate = reconstructStates(N,protein.edo,protein.HPlist,pulledindicesT,dirsT,newcoordsT,protein.geometry)[:,:,end]
-            append!(energies,datatemp1[4]) # Store the first batch of energies.
+            energies[1:ns+1] = datatemp1[4]
+            # append!(energies,datatemp1[4]) # Store the first batch of energies.
         
         
             # Store the output generated in the first simulation.
@@ -225,15 +213,15 @@ function main_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,p
         
             # For each of the remaining temperatures, employ the Metropolis-Hastings algorithm to store the information about the
             # visited configurations at the current temperature.
+            cont = ns+2
             for k in 2:length(temperatures)
                 temp = reverse(temperatures)[k] # temperature at which the simulation is performed
                 proteinaux = Protein(laststate,protein.HPlist,protein.geometry) # Protein structure for the simulation.
-                pulledindices,dirs,newcoords,enstates = metropolis(N,nums,temp,proteinaux,pfmodel)  # Perfom the simulation.
-                append!(energies,enstates) # Store the visited energies.
+                pulledindicesT,dirsT,newcoordsT,enstates = metropolis(N,nums,temp,proteinaux,pfmodel)  # Perfom the simulation.
+                # append!(energies,enstates) # Store the visited energies.
+                energies[cont:cont+(ns-1)] = enstates[2:end] # Store the visited energies.
+                cont = cont+ns 
                 
-                pulledindicesT = pulledindices # The next three variables will be used to perform subsequent simulations.
-                dirsT = dirs
-                newcoordsT = newcoords
                 
                 # Store the output generated in the first simulation.
                 st = "_"*string(k)
@@ -252,7 +240,7 @@ function main_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,p
     elseif geometry == square2D
         # Now, perform a Metropolis-Hastings simulation for each temperature in `temperatures`. Sweep the tempeartures `nruns` times.
         for l in 1:nruns
-            energies = Float64[] # Energies for the current run.
+            energies = zeros(Float64,Int((ns*length(temperatures))+1)) # Energies for the current run.
 
             # Perform the first simulation.
             datatemp1 = metropolis(N,nums,temperatures[end],protein,pfmodel)
@@ -260,8 +248,7 @@ function main_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,p
             dirsT = datatemp1[2]
             newcoordsT = datatemp1[3]
             laststate = reconstructStates(N,protein.edo,protein.HPlist,pulledindicesT,dirsT,newcoordsT,protein.geometry)[:,:,end]
-            append!(energies,datatemp1[4]) # Store the first batch of energies.
-    
+            energies[1:ns+1] = datatemp1[4] # Store the first batch of energies.
     
             # Store the output generated in the first simulation.
             pathnameaux = pathname*"/"*string(l)
@@ -273,16 +260,14 @@ function main_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,p
     
             # For each of the remaining temperatures, employ the Metropolis-Hastings algorithm to store the information about the
             # visited configurations at the current temperature.
+            cont = ns+2
             for k in 2:length(temperatures)
                 temp = reverse(temperatures)[k] # temperature at which the simulation is performed
                 proteinaux = Protein(laststate,protein.HPlist,protein.geometry) # Auxiliary protein structure for the simulation.
-                pulledindices,dirs,newcoords,enstates = metropolis(N,nums,temp,proteinaux,pfmodel)  # Perform the simulation.
-                append!(energies,enstates) # Store the visited energies.
+                pulledindicesT,dirsT,newcoordsT,enstates = metropolis(N,nums,temp,proteinaux,pfmodel)  # Perform the simulation.
+                energies[cont:cont+(ns-1)] = enstates[2:end] # Store the visited energies.
+                cont = cont+ns 
 
-                pulledindicesT = pulledindices # The next three variables will be used to perform subsequent simulations.
-                dirsT = dirs
-                newcoordsT = newcoords
-                
                 # Store the output generated in the first simulation.
                 st = "_"*string(k)
                 writedlm(pathnameaux*st*"_1.csv",pulledindicesT,',')

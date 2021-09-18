@@ -727,10 +727,11 @@ function countFirst(N::Int,edo,HPlist::Vector{Amin},geometry::geometries)
     
         numpull = length(coordinates1)
         # Now we have the possible coordinates for the first two monomers, as well as the number of possible pull moves for the first 
-        # amino acid. Fo easier use, I turn the arrays `coordinates1,coordinates2` into a `numpull×2` matrices.
+        # amino acid. Fo easier use, I turn the arrays `coordinates1,coordinates2` into matrices.
     
-        coordinates1p = convert(Matrix{Int16},transpose(hcat(coordinates1...)))
-        coordinates2p = convert(Matrix{Int16},transpose(hcat(coordinates2...)))
+        coordinates1p = transpose(hcat(coordinates1...))
+        coordinates2p = transpose(hcat(coordinates2...))
+    
         return (numpull,coordinates1p,coordinates2p)
         
     
@@ -743,9 +744,9 @@ function countFirst(N::Int,edo,HPlist::Vector{Amin},geometry::geometries)
 
         numpull = length(coordinates1) # Compute the number of pull-moves.
         # Now we have the possible coordinates for the first monomer, as well as the number of possible pull moves for the first 
-        # amino acid. Fo easier use, I turn the arrays into matrices.
+        # amino acid. Fo easier use, I turn the array into a matrix.
 
-        coordinates1p = convert(Matrix{Int16},transpose(hcat(coordinates1...)))
+        coordinates1p = transpose(hcat(coordinates1...))
         return (numpull,coordinates1p)
     end
 end
@@ -794,10 +795,11 @@ function countLast(N::Int,edo,HPlist::Vector{Amin},geometry::geometries)
     
         numpull = length(coordinates1)
         # Now we have the possible coordinates for the last two monomers, as well as the number of possible pull moves for the last 
-        # amino acid. Fo easier use, I turn the arrays `coordinates1,coordinates2` into a `numpull×2` matrices.
+        # amino acid. Fo easier use, I turn the arrays `coordinates1,coordinates2` into matrices.
     
-        coordinates1p = convert(Matrix{Int16},transpose(hcat(coordinates1...)))
-        coordinates2p = convert(Matrix{Int16},transpose(hcat(coordinates2...)))
+        coordinates1p = transpose(hcat(coordinates1...))
+        coordinates2p = transpose(hcat(coordinates2...))
+        
         return (numpull,coordinates1p,coordinates2p)
 
     
@@ -810,9 +812,9 @@ function countLast(N::Int,edo,HPlist::Vector{Amin},geometry::geometries)
 
         numpull = length(coordinates1) # Compute the number of pull-moves.
         # Now we have the possible coordinates for the last monomer, as well as the number of possible pull moves for the last
-        # amino acid. Fo easier use, I turn the arrays into matrices.
+        # amino acid. Fo easier use, I turn the array into a matrix.
 
-        coordinates1p = convert(Matrix{Int16},transpose(hcat(coordinates1...)))
+        coordinates1p = transpose(hcat(coordinates1...))
         return (numpull,coordinates1p)
     end
 end
@@ -861,8 +863,8 @@ function countMiddle(N::Int,ind,edo,HPlist::Vector{Amin},geometry::geometries)
         numpull = length(coordinates1)+length(coordinatesi)
 
         # I turn the 1 dimensional arrays into matrices for easier use.
-        coordinates1p = convert(Matrix{Int16},transpose(hcat(coordinates1...)))
-        coordinatesip = convert(Matrix{Int16},transpose(hcat(coordinatesi...)))
+        coordinates1p = transpose(hcat(coordinates1...))
+        coordinatesip = transpose(hcat(coordinatesi...))
 
         return (numpull,coordinates1p,coordinatesip) # Returns everything neccesary to reproduce the final configuration.
 
@@ -907,10 +909,10 @@ function countMiddle(N::Int,ind,edo,HPlist::Vector{Amin},geometry::geometries)
         numpull = length(coordinates1)+length(coordinatesi)
 
         # I turn the 1 dimensional arrays into matrices for easier use.
-        coordinates1p = convert(Matrix{Int16},transpose(hcat(coordinates1...)))
-        coordinates2p = convert(Matrix{Int16},transpose(hcat(coordinates2...)))
-        coordinatesip = convert(Matrix{Int16},transpose(hcat(coordinatesi...)))
-        coordinatesiip = convert(Matrix{Int16},transpose(hcat(coordinatesii...)))
+        coordinates1p = transpose(hcat(coordinates1...))
+        coordinates2p = transpose(hcat(coordinates2...))
+        coordinatesip = transpose(hcat(coordinatesi...))
+        coordinatesiip = transpose(hcat(coordinatesii...))
 
         return (numpull,coordinates1p,coordinates2p,coordinatesip,coordinatesiip) # Returns everything neccesary to reproduce the final configuration.
     end
@@ -1614,24 +1616,3 @@ function reconstructStates(N::Int,edo,HPlist::Vector{Amin},pulledindices,dirs::V
 
     end
 end
-
-
-
-
-
-
-
-
-
-
-# seq_64 = Amin[H,H,H,H,H,H,H,H,H,H,H,H,P,H,P,H,P,P,H,H,P,P,H,H,P,P,H,P,P,H,H,P,P,H,H,P,P,H,P,P,H,H,P,P,H,H,P,P,H,P,H,P,H,H,H,H,H,H,H,H,H,H,H,H]
-
-# testProtein64 = Protein(hcat(Int16[10 for i in 1:64],Int16(1+6):Int16(64+6)),seq_64,square2D)
-
-# redprueba = makeLattice(80,testProtein64.edo,testProtein64.HPlist)
-
-# @show(periodicInd(redprueba,testProtein64.edo[1,:],2))
-
-# @show(nearestNeighborsCoords(redprueba,testProtein64.edo[1,:],testProtein64.geometry))
-
-# countpull(80,testProtein64.edo,testProtein64.HPlist,testProtein64.geometry)

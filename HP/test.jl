@@ -16,7 +16,9 @@ seq_64 = Amin[H,H,H,H,H,H,H,H,H,H,H,H,P,H,P,H,P,P,H,H,P,P,H,H,P,P,H,P,P,H,H,P,P,
 
 testProtein64 = Protein(hcat(Int16[10 for i in 1:64],Int16(1+6):Int16(64+6)),seq_64,square2D)
 
-@time main_met(80,100,0.01,1.0,100,1,testProtein64,HP1_model,"simu3")
+
+# display(@time main_met_1(80,20,0.01,1.0,4,10,testProtein64,HP1_model,"simu8"))
+display(@time main_met(80,20,0.01,1.0,4,10,testProtein64,HP1_model,"simu9"))
 # wang_landau(21,testProtein,200,HPNX_model,"simu1")
 
 

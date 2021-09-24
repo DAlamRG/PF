@@ -131,6 +131,7 @@ const pfname_dict = Dict{Int8,PFmodelname}(1 => HP1, 2 => HP2, 3 => HP3, 4 => HP
 
 
 
+
 # Dictionaries to assign positions.
 const DictHP = Dict{Amin,Int8}(H => 1, P => 2, N => 3, X => 4, h => 5)
 const DicthYhHX = Dict{Amin,Int8}(Y => 1, h => 2, H => 3, X => 4)
@@ -259,21 +260,140 @@ end
 
 
 
+const translate_HP = Dict{Amin,Amin}(Cys => , 
+MET => ,
+PHE => , 
+ILE => ,
+LEU => ,
+VAL => ,
+TRP => ,
+TYR => ,
+ALA => ,
+GLY => , 
+THR => ,
+SER => , 
+ASN => , 
+GLN => ,
+ASP => ,
+GLU => ,
+HIS => , 
+ARG => ,
+LYS => ,
+PRO => ,)
+const translate_HPNX = (Cys => , 
+MET => ,
+PHE => , 
+ILE => ,
+LEU => ,
+VAL => ,
+TRP => ,
+TYR => ,
+ALA => ,
+GLY => , 
+THR => ,
+SER => , 
+ASN => , 
+GLN => ,
+ASP => ,
+GLU => ,
+HIS => , 
+ARG => ,
+LYS => ,
+PRO => ,)
+const translate_hHPNX = (Cys => , 
+MET => ,
+PHE => , 
+ILE => ,
+LEU => ,
+VAL => ,
+TRP => ,
+TYR => ,
+ALA => ,
+GLY => , 
+THR => ,
+SER => , 
+ASN => , 
+GLN => ,
+ASP => ,
+GLU => ,
+HIS => , 
+ARG => ,
+LYS => ,
+PRO => ,)
+const translate_YhHX = (Cys => , 
+MET => ,
+PHE => , 
+ILE => ,
+LEU => ,
+VAL => ,
+TRP => ,
+TYR => ,
+ALA => ,
+GLY => , 
+THR => ,
+SER => , 
+ASN => , 
+GLN => ,
+ASP => ,
+GLU => ,
+HIS => , 
+ARG => ,
+LYS => ,
+PRO => ,)
+
+"""
+    translate_HPlist(HPlist,pfmodel)
+Given an amino acid sequence `HPlist` and a model `model`; returns the equivalent list for the given model.
+"""
+function translate_HPlist(HPlist::Vector{Amin},pfmodel::PFmodelname)
+    len = length(HPlist)
+    HPlist_aux = fill(CYS,len)
+    if (pfmodel == HP1) || (pfmodel == HP2) || (pfmodel == HP3)
+        for k in 1:len
+            HPlist_aux[k] = translate_HP[HPlist[k]]
+        end
+
+    elseif pfmodel == HPNX
+        for k in 1:len
+            HPlist_aux[k] = translate_HPNX[HPlist[k]]
+        end
+
+    elseif pfmodel == hHPNX
+        for k in 1:len
+            HPlist_aux[k] = translate_hHPNX[HPlist[k]]
+        end
+
+    elseif pfmodel == YhHX
+        for k in 1:len
+            HPlist_aux[k] = translate_YhHX[HPlist[k]]
+        end
+    end
+    return
+end
+
+
+
+
+
+
+
+
+
+
+
 """
     dirsf(vec)
 Given a vector with integer entries; returns the equivalent `dirs` vector.
 """
 function dirsf(vec::Array{Int8,1})
     l = length(vec)
-    dirsVec = Vector{directions}(undef,l) # Declare the equivalent `dirs` vector.
+    dirsVec = fill(nonetaken,l) # Declare the equivalent `dirs` vector.
     for k in 1:l
         val = vec[k]
         if val == 1
             dirsVec[k] = forwards
         elseif val == 2
             dirsVec[k] = backwards
-        else
-            dirsVec[k] = nonetaken
         end
     end
     return dirsVec
@@ -407,14 +527,14 @@ function nearestNeighbors(red::Array{Int8,2},inds,geometry::geometries)
     A = red
 
     if geometry == cubic
-        x,y,z = periodicInd(red,inds,3)
+        x,y,z = inds
         nn = Int8[periodicArr(A,[x-1,y,z],3),periodicArr(A,[x,y+1,z],3),periodicArr(A,[x+1,y,z],3),periodicArr(A,[x,y-1,z],3),
         periodicArr(A,[x,y,z+1],3),periodicArr(A,[x,y,z-1],3)] # Last two neighbors fall outside x-y plane.
         return nn
     
 
     elseif geometry == fcc # Fcc geometry has 12 topological nearest neighbors.
-        i,j,k = periodicInd(red,inds,3)
+        x,y,z = inds
         nn = Int8[periodicArr(A,[i+1,j,k],3),periodicArr(A,[i-1,j,k],3)
         ,periodicArr(A,[i,j+1,k],3),periodicArr(A,[i,j-1,k],3)
         ,periodicArr(A,[i,j,k+1],3),periodicArr(A,[i,j,k-1],3)
@@ -425,13 +545,13 @@ function nearestNeighbors(red::Array{Int8,2},inds,geometry::geometries)
     
 
     elseif geometry == square2D
-        x,y = periodicInd(red,inds,2)
+        x,y = inds
         nn = Int8[periodicArr(A,[x-1,y],2),periodicArr(A,[x,y+1],2),periodicArr(A,[x+1,y],2),periodicArr(A,[x,y-1],2)]
         return nn
 
 
     elseif geometry == triangular2D
-        x,y = periodicInd(red,inds,2)
+        x,y = inds
         nn = Int8[periodicArr(A,[x-1,y],2),periodicArr(A,[x,y+1],2)
         ,periodicArr(A,[x+1,y+1],2),periodicArr(A,[x+1,y],2)
         ,periodicArr(A,[x,y-1],2),periodicArr(A,[x-1,y-1],2)]
@@ -463,15 +583,15 @@ to the given position.
 function nearestNeighborsCoords(red::Array{Int8,2},inds,geometry::geometries)
     A = red
 
-    if geometry == cubic 
-        x,y,z = periodicInd(red,inds,3)
+    if geometry == cubic
+        x,y,z = inds 
         nnc = Vector{Int16}[periodicInd(A,[x-1,y,z],3),periodicInd(A,[x,y+1,z],3),periodicInd(A,[x+1,y,z],3),periodicInd(A,[x,y-1,z],3),
         periodicInd(A,[x,y,z+1],3),periodicInd(A,[x,y,z-1],3)] # Last two neighbors fall outside x-y plane.
         return nnc
     
     
     elseif geometry == fcc # First six neighbors are in the same x-y plane. The remaining six are outside.
-        i,j,k = periodicInd(red,inds,3)
+        x,y,z = inds
         nnc = Vector{Int16}[periodicInd(A,[i+1,j,k],3),periodicInd(A,[i-1,j,k],3)
         ,periodicInd(A,[i,j+1,k],3),periodicInd(A,[i,j-1,k],3)
         ,periodicInd(A,[i,j,k+1],3),periodicInd(A,[i,j,k-1],3)
@@ -482,13 +602,13 @@ function nearestNeighborsCoords(red::Array{Int8,2},inds,geometry::geometries)
     
 
     elseif geometry == square2D
-        x,y = periodicInd(red,inds,2)
+        x,y = inds
         nnc  = Vector{Int16}[periodicInd(A,[x-1,y],2),periodicInd(A,[x,y+1],2),periodicInd(A,[x+1,y],2),periodicInd(A,[x,y-1],2)]
         return nnc
 
 
     elseif geometry == triangular2D
-        x,y = periodicInd(red,inds,2)
+        x,y = inds
         nnc = Vector{Int16}[periodicInd(A,[x-1,y],2),periodicInd(A,[x,y+1],2)
         ,periodicInd(A,[x+1,y+1],2),periodicInd(A,[x+1,y],2)
         ,periodicInd(A,[x,y-1],2),periodicInd(A,[x-1,y-1],2)]
@@ -614,7 +734,7 @@ function validConf(N::Int,ind,edo,HPlist::Vector{Amin},dir::directions,geometry:
         if dir == backwards # Check backwards.
             if ind != 1
                 for j in ind:-1:2
-                    x1,y1,z1 = periodicInd(red,edo[j,:],3) 
+                    x1,y1,z1 = edo[j,:]
                     x2,y2,z2 = periodicInd(red,edo[j-1,:],3) 
                     nnc = nearestNeighborsCoords(red,[x1,y1,z1],geometry) # Nearest neigbors to the position `[x1,y1,z1]`.
                     
@@ -629,7 +749,7 @@ function validConf(N::Int,ind,edo,HPlist::Vector{Amin},dir::directions,geometry:
         elseif dir == forwards # Check forwards.
             if ind != length(HPlist)
                 for j in ind:length(HPlist)-1
-                    x1,y1,z1 = periodicInd(red,edo[j,:],3) 
+                    x1,y1,z1 = edo[j,:]
                     x2,y2,z2 = periodicInd(red,edo[j+1,:],3) 
                     nnc = nearestNeighborsCoords(red,[x1,y1,z1],geometry) # Nearest neigbors to the position `[x1,y1,z1]`.
                     
@@ -647,7 +767,7 @@ function validConf(N::Int,ind,edo,HPlist::Vector{Amin},dir::directions,geometry:
         if dir == backwards
             if ind != 1
                 for j in ind:-1:2
-                    x1,y1 = periodicInd(red,edo[j,:],2) 
+                    x1,y1 = edo[j,:] 
                     x2,y2 = periodicInd(red,edo[j-1,:],2) 
                     nnc = nearestNeighborsCoords(red,[x1,y1],geometry) # Nearest neigbors to the position `[x1,y1]`.
                     
@@ -662,7 +782,7 @@ function validConf(N::Int,ind,edo,HPlist::Vector{Amin},dir::directions,geometry:
         elseif dir == forwards
             if ind != length(HPlist)
                 for j in ind:length(HPlist)-1
-                    x1,y1 = periodicInd(red,edo[j,:],2) # Make the indices periodic.
+                    x1,y1 = edo[j,:]
                     x2,y2 = periodicInd(red,edo[j+1,:],2) # Make the indices periodic.
                     nnc = nearestNeighborsCoords(red,[x1,y1],geometry) # Nearest neigbors to the position `[x1,y1]`.
                     

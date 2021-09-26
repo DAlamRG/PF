@@ -1,3 +1,4 @@
+using LinearAlgebra: convert
 
 # This script employs the main function to perform and save the simulations.
 include("./HP-model.jl")
@@ -6,9 +7,9 @@ include("./HP-model.jl")
 
 
 
-
-
 # First, define a `Protein` structure:
+# A good website to search for sequences is uniprot.org
+
 
 # testProteinfcc = Protein([[7 2 9];[7 3 9];[7 4 9];[7 5 9];[7 6 9];[7 7 9];[7 8 9];[7 9 9];[7 10 9];[7 11 9];[7 12 9];[7 13 9];[7 14 9];[7 15 9];[7 16 9]],[H,P,N,h,H,h,P,X,P,h,N,h,H,P,H],fcc)
 # testProtein = Protein([[10 5];[10 6];[10 7];[10 8];[10 9];[10 10];[10 11];[10 12];[10 13]],[P,H,N,H,P,X,H,H,P],triangular2D
@@ -37,19 +38,16 @@ end
 
 seq_hemo = convert_Amin("MGHFTEEDKATITSLWGKVNVEDAGGETLGRLLVVYPWTQRFFDSFGNLSSASAIMGNPKVKAHGKKVLTSLGDAIKHLDDLKGTFAQLSELHCDKLHVDPENFKLLGNVLVTVLAIHFGKEFTPEVQASWQKMVTGVASALSSRYH")
 seq_hemo = translate_HPlist(seq_hemo,HP1,true)
-display(seq_hemo)
 
-# hemoglobin21 = Protein(hcat(Int16[10 for i in 1:21],Int16(1+6):Int16(21+6)),seq_hemo[1:21],square2D)
-# hemoglobin42 = Protein(hcat(Int16[10 for i in 1:42],Int16(1+6):Int16(42+6)),seq_hemo[1:42],square2D)
-# hemoglobin63 = Protein(hcat(Int16[10 for i in 1:63],Int16(1+6):Int16(63+6)),seq_hemo[1:63],square2D)
-# hemoglobin84 = Protein(hcat(Int16[10 for i in 1:84],Int16(1+6):Int16(84+6)),seq_hemo[1:84],square2D)
-# hemoglobin105 = Protein(hcat(Int16[10 for i in 1:105],Int16(1+6):Int16(105+6)),seq_hemo[1:105],square2D)
-# hemoglobin126 = Protein(hcat(Int16[10 for i in 1:126],Int16(1+6):Int16(126+6)),seq_hemo[1:126],square2D)
-hemoglobin147 = Protein(hcat(Int16[10 for i in 1:147],Int16(1+6):Int16(147+6)),seq_hemo[1:147],square2D)
+# seq_ribonuclease = convert_Amin("MALEKSLVRLLLLVLILLVLGWVQPSLGKESRAKKFQRQHMDSDSSPSSSSTYCNQMMRRRNMTQGRCKPVNTFVHEPLVDVQNVCFQEKVTCKNGQGNCYKSNSSMHITDCRLTNGSRYPNCAYRTSPKERHIIVACEGSPYVPVHFDASVEDST")
+seq_crambin = convert_Amin("TTCCPSIVARSNFNVCRLPGTPEALCATYTGCIIIPGATCPGDYAN")
+seq_crambin = translate_HPlist(seq_crambin,HP1,true)
 
 
+crmabin_46 = Protein(hcat(Int16[20 for i in 1:46],Int16(1+6):Int16(46+6)),seq_crambin,fcc)
 
-display(@time main_met_1(160,100,0.01,1.0,100,8,hemoglobin147,HP1_model,"simu6"))
+
+display(@time main_met_1(160,80,0.01,1.0,50,1,hemoglobin147,HP1_model,"simu6"))
 
 # display(@time main_met(38,100,0.01,1.0,30,1,hemoglobin21,HP1_model,"simu6"))
 # display(@time main_met(55,100,0.01,1.0,30,1,hemoglobin42,HP1_model,"simu7"))

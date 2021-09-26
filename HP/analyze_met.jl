@@ -1,7 +1,7 @@
 using Plots: length, get_fillalpha
 using Base: Float64, Int16, String
 
-# This script takes the data stores in output and returns the thermodynamic analysis.
+# This script takes the data stored in output and returns the thermodynamic analysis.
 
 using Plots
 gr()
@@ -41,10 +41,10 @@ end
 
 
 """
-    Rᵧ(vec)
-Given an array encoding the positions for the monomers on the chain `vec`; returns the corresponding radius of giration. 
+    Rgy(vec)
+Given a matrix encoding the positions for the monomers on the chain `vec`; returns the corresponding radius of giration. 
 """
-function Rᵧ(vec)
+function Rgy(vec)
     dim = size(vec)[2] 
     m = size(vec)[1]
     rcm = center_mass(vec,dim)
@@ -68,7 +68,7 @@ end
 
 """
     ee_distance(vec)
-Given a mtric encoding the aminoacid's positions; returns the distance between the first and last monomers.
+Given a matrix encoding the aminoacid's positions; returns the distance between the first and last monomers.
 """
 function ee_distance(vec)
     ree = norm(vec[1,:]-vec[end,:])
@@ -180,13 +180,10 @@ function states_met(name::String)
     pathname1 = "./output"*"/"*name*"/"
 
     nruns = Int(readdlm(pathname1*"nruns.csv",',')[1])
-    geometry = geom_int(Int(readdlm(pathname1*"geometry.csv",',')[1]))
     HPlist = readdlm(pathname1*"HPlist.csv",',')
     HPlist = Amin[amin_dict[j] for j in HPlist]
     initialconf = Int16.(readdlm(pathname1*"initialconf.csv",','))
-    N = Int(readdlm(pathname1*"latticesize.csv",',')[1])
     nums = readdlm(pathname1*"mc_sweeps.csv",',')[1]
-    pfmodel = readdlm(pathname1*"pfmodel.csv",',')
     temperatures = readdlm(pathname1*"temperatures.csv",',')
 
     n_amin = length(HPlist) 
@@ -214,6 +211,53 @@ end
 
 
 
+"""
+    analyze_met_geom(name)
+Given the name of the directory `name` where the relevant data is stored; stores the values for the radius of gyration and end to end distance, 
+to the same directory.
+"""
+function analyze_met_geom(name::String)
+
+    # Load the data.
+    pathname1 = "./output"*"/"*name*"/"
+
+    HPlist = readdlm(pathname1*"HPlist.csv",',')
+    HPlist = Amin[amin_dict[j] for j in HPlist]
+    nums = readdlm(pathname1*"mc_sweeps.csv",',')[1]
+    temperatures = readdlm(pathname1*"temperatures.csv",',')
+
+    n_amin = length(HPlist) 
+    ns = Int(nums*n_amin)
+    n_middle = Int(ceil(ns/2))
+
+    run_states = states_met(name)
+    nruns = length(run_states)
+
+    rs = zeros(Float64,(length(temperatures),nruns))
+    ees = zeros(Float64,(length(temperatures),nruns))
+    for k in 1:nruns
+        state = run_states[k]
+        cont = 1
+        for t in length(temperatures):-1:1
+            rs_aux = Float64[Rgy(state[:,:,cont+n_middle:cont+l]) for l in 1:(ns-1)]
+            ees_aux = Float64[ee_distance(state[:,:,cont+n_middle:cont+l]) for l in 1:(ns-1)]
+            rs[t,k] = mean(rs_aux)
+            ees[t,k] = mean(ees_aux)
+            cont =  cont + ns
+        end
+    end
+    
+    writedlm(pathname1*"rs.csv",rs,',')
+    writedlm(pathname1*"ees.csv",ees,',')
+end
+
+
+
+
+
+
+
+
 
 
 
@@ -230,16 +274,10 @@ function analyze_met_thermo(name::String)
     pathname1 = "./output"*"/"*name*"/"
 
     nruns = Int(readdlm(pathname1*"nruns.csv",',')[1])
-    geometry = geom_int(Int(readdlm(pathname1*"geometry.csv",',')[1]))
     HPlist = readdlm(pathname1*"HPlist.csv",',')
     HPlist = Amin[amin_dict[j] for j in HPlist]
-    initialconf = readdlm(pathname1*"initialconf.csv",',')
-    N = Int(readdlm(pathname1*"latticesize.csv",',')[1])
     nums = readdlm(pathname1*"mc_sweeps.csv",',')[1]
-    pfmodel = readdlm(pathname1*"pfmodel.csv",',')
     temperatures = readdlm(pathname1*"temperatures.csv",',')
-
-
 
     # Now, we need to retrieve the energies for all the visited temperatures, for all the independent runs.
     n_amin = length(HPlist) 
@@ -302,8 +340,6 @@ cp = Float64[mean(cs3[k,:]) for k in 1:length(temps)]
 cσs = Float64[std(cs3[k,:]) for k in 1:length(temps)]
 
 
-# display(scatter(temps,us3[:,1],ms=2,color="green",alpha=0.7,xlabel="T",ylabel="u(T)",title="Internal energy per monomer for simu3",label=""))
-# display(scatter(temps,cs3[:,1],ms=3,color="purple",alpha=0.7,xlabel="T",ylabel="c(T)",title="heat per monomer for simu3",label=""))
 
 display(scatter(temps,up,ms=3.5,color="green",alpha=0.7,xlabel="T",ylabel="u(T)",title="Internal energy per monomer for simu3",label="",ribbon=uσs,fillalpha=0.3))
 # display(scatter(temps,cp,ms=3.5,color="purple",alpha=0.7,xlabel="T",ylabel="c(T)",title="Specific heat per monomer for simu3",label="",ribbon=cσs,fillalpha=0.3))

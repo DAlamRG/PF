@@ -16,7 +16,7 @@ include("./Energy.jl")
     metropolis(N,nums,T,protein,pfmodel) 
 
 Given a 2D/3D array size `N`, a number of Monte-Carlo sweeps `nums`, the temperature T, a protein structure `protein` encoding the protein's 
-configuration and an aminoacid interaction model `pfmodel`; returns the information necessay to reproduce the visited configuration during the 
+configuration and an amino acid interaction model `pfmodel`; returns the information necessay to reproduce the visited configuration during the 
 simulation (using the Metropolis-Hastings algorithm) as well as the visited energies.
 """
 function metropolis(N::Int,nums::Int,T::Float64,protein::Protein,pfmodel::PF_model)  
@@ -162,7 +162,7 @@ end
 
 Given a 2D/3D array size `N`, a number of Monte-Carlo sweeps per temperature `nums`, an initial(final) temperature `ti(tf)`, the number of 
 temperatures to be visited `nTs`, a number of independent temperature sweeps `nruns`, a structure `protein` encoding the protein´s 
-configuration, an aminoacid interaction model `pfmodel`, and a name for the simulation output `name`; writes the information needed to 
+configuration, an aminoacid interaction model `pfmodel` and a name for the simulation output `name`; writes the information needed to 
 recreate the visited states after performing a simulation using the Metropolis-Hastings algorithm.
 """
 function main_met_1(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,protein::Protein,pfmodel::PF_model,name::String)
@@ -297,7 +297,7 @@ end
 
 Given a 2D/3D array size `N`, a number of Monte-Carlo sweeps per temperature `nums`, an initial(final) temperature `ti(tf)`, the number of 
 temperatures to be visited `nTs`, a number of independent temperature sweeps `nruns`, a structure `protein` encoding the protein´s 
-configuration, an aminoacid interaction model `pfmodel`, and a name for the simulation output `name`; writes the information needed to 
+configuration, an aminoacid interaction model `pfmodel` and a name for the simulation output `name`; writes the information needed to 
 recreate the visited states after performing a simulation using the Metropolis-Hastings algorithm.
 """
 function main_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,protein::Protein,pfmodel::PF_model,name::String)

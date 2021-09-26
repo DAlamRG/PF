@@ -47,10 +47,6 @@ end
 
 
 
-
-
-
-
 # Declare the type of aminoacids available for this script.
 @enum Amin::Int8 begin
     h = 1
@@ -101,8 +97,6 @@ const amin_dict = Dict{Int8,Amin}(1 => h, 2 => H, 3 => P, 4 => N, 5 => X, 6 => Y
 
 
 
-
-
 # Declare the different interaction model names.
 @enum PFmodelname::Int8 begin
     HP1 = 1
@@ -130,11 +124,9 @@ const pfname_dict = Dict{Int8,PFmodelname}(1 => HP1, 2 => HP2, 3 => HP3, 4 => HP
 
 
 
-
-
 # Dictionaries to assign positions.
 const DictHP = Dict{Amin,Int8}(H => 1, P => 2, N => 3, X => 4, h => 5)
-const DicthYhHX = Dict{Amin,Int8}(Y => 1, h => 2, H => 3, X => 4)
+const DictYhHX = Dict{Amin,Int8}(Y => 1, h => 2, H => 3, X => 4)
 const DictFull1 = Dict{Amin,Int8}(CYS => 1, MET => 2, PHE => 3, ILE => 4, LEU => 5,
 VAL => 6, TRP => 7, TYR => 8, ALA => 9, GLY => 10, THR => 11, SER => 12, ASN => 13,
 GLN => 14, ASP => 15, GLU => 16, HIS => 17, ARG => 18, LYS => 19, PRO => 20)
@@ -238,7 +230,7 @@ const HP2_model = PF_model(HP2,HP2intMatrix,DictHP)
 const HP3_model = PF_model(HP3,HP3intMatrix,DictHP)
 const HPNX_model = PF_model(HPNX,HPNXintMatrix,DictHP)
 const hHPNX_model = PF_model(hHPNX,hHPNXintMatrix,DictHP)
-const YhHX_model = PF_model(YhHX,YhHXintMatrix,DicthYhHX)
+const YhHX_model = PF_model(YhHX,YhHXintMatrix,DictYhHX)
 const Full1_model = PF_model(Full1,Full1intMatrix,DictFull1)
 const Full2_model = PF_model(Full2,Full2intMatrix,DictFull1)
 
@@ -260,115 +252,121 @@ end
 
 
 
-const translate_HP = Dict{Amin,Amin}(Cys => , 
-MET => ,
-PHE => , 
-ILE => ,
-LEU => ,
-VAL => ,
-TRP => ,
-TYR => ,
-ALA => ,
-GLY => , 
-THR => ,
-SER => , 
-ASN => , 
-GLN => ,
-ASP => ,
-GLU => ,
-HIS => , 
-ARG => ,
-LYS => ,
-PRO => ,)
-const translate_HPNX = (Cys => , 
-MET => ,
-PHE => , 
-ILE => ,
-LEU => ,
-VAL => ,
-TRP => ,
-TYR => ,
-ALA => ,
-GLY => , 
-THR => ,
-SER => , 
-ASN => , 
-GLN => ,
-ASP => ,
-GLU => ,
-HIS => , 
-ARG => ,
-LYS => ,
-PRO => ,)
-const translate_hHPNX = (Cys => , 
-MET => ,
-PHE => , 
-ILE => ,
-LEU => ,
-VAL => ,
-TRP => ,
-TYR => ,
-ALA => ,
-GLY => , 
-THR => ,
-SER => , 
-ASN => , 
-GLN => ,
-ASP => ,
-GLU => ,
-HIS => , 
-ARG => ,
-LYS => ,
-PRO => ,)
-const translate_YhHX = (Cys => , 
-MET => ,
-PHE => , 
-ILE => ,
-LEU => ,
-VAL => ,
-TRP => ,
-TYR => ,
-ALA => ,
-GLY => , 
-THR => ,
-SER => , 
-ASN => , 
-GLN => ,
-ASP => ,
-GLU => ,
-HIS => , 
-ARG => ,
-LYS => ,
-PRO => ,)
+const translate_HP = Dict{Amin,Amin}(CYS => P, 
+MET => H,
+PHE => H, 
+ILE => H,
+LEU => H,
+VAL => H,
+TRP => H,
+TYR => P,
+ALA => H,
+GLY => H, 
+THR => P,
+SER => P, 
+ASN => P, 
+GLN => P,
+ASP => P,
+GLU => P,
+HIS => P, 
+ARG => P,
+LYS => P,
+PRO => H)
+const translate_HPNX = (CYS => X, 
+MET => H,
+PHE => H, 
+ILE => H,
+LEU => H,
+VAL => H,
+TRP => H,
+TYR => X,
+ALA => H,
+GLY => H, 
+THR => X,
+SER => X, 
+ASN => X, 
+GLN => X,
+ASP => N,
+GLU => N,
+HIS => P, 
+ARG => P,
+LYS => P,
+PRO => H)  
+const translate_hHPNX = (CYS => X, 
+MET => H,
+PHE => H, 
+ILE => H,
+LEU => H,
+VAL => h,
+TRP => H,
+TYR => X,
+ALA => h,
+GLY => H, 
+THR => X,
+SER => X, 
+ASN => X, 
+GLN => X,
+ASP => N,
+GLU => N,
+HIS => P, 
+ARG => P,
+LYS => P,
+PRO => H)
+const translate_YhHX = (CYS => H, 
+MET => H,
+PHE => H, 
+ILE => H,
+LEU => H,
+VAL => h,
+TRP => X,
+TYR => Y,
+ALA => h,
+GLY => Y, 
+THR => X,
+SER => Y, 
+ASN => Y, 
+GLN => X,
+ASP => X,
+GLU => Y,
+HIS => Y, 
+ARG => Y,
+LYS => X,
+PRO => X)
+
 
 """
-    translate_HPlist(HPlist,pfmodel)
-Given an amino acid sequence `HPlist` and a model `model`; returns the equivalent list for the given model.
+    translate_HPlist(HPlist,pfmodel,translate)
+Given an amino acid sequence `HPlist`, a model `pfmodel` and a boolean value `translate`; returns the equivalent list for the given model.
 """
-function translate_HPlist(HPlist::Vector{Amin},pfmodel::PFmodelname)
-    len = length(HPlist)
-    HPlist_aux = fill(CYS,len)
-    if (pfmodel == HP1) || (pfmodel == HP2) || (pfmodel == HP3)
-        for k in 1:len
-            HPlist_aux[k] = translate_HP[HPlist[k]]
+function translate_HPlist(HPlist::Vector{Amin},pfmodel::PFmodelname,translate::Bool)
+    if translate
+        len = length(HPlist)
+        HPlist_aux = fill(CYS,len)
+        if (pfmodel == HP1) || (pfmodel == HP2) || (pfmodel == HP3)
+            for k in 1:len
+                HPlist_aux[k] = translate_HP[HPlist[k]]
+            end
+    
+        elseif pfmodel == HPNX
+            for k in 1:len
+                HPlist_aux[k] = translate_HPNX[HPlist[k]]
+            end
+    
+        elseif pfmodel == hHPNX
+            for k in 1:len
+                HPlist_aux[k] = translate_hHPNX[HPlist[k]]
+            end
+    
+        elseif pfmodel == YhHX
+            for k in 1:len
+                HPlist_aux[k] = translate_YhHX[HPlist[k]]
+            end
         end
+        return HPlist_aux
 
-    elseif pfmodel == HPNX
-        for k in 1:len
-            HPlist_aux[k] = translate_HPNX[HPlist[k]]
-        end
-
-    elseif pfmodel == hHPNX
-        for k in 1:len
-            HPlist_aux[k] = translate_hHPNX[HPlist[k]]
-        end
-
-    elseif pfmodel == YhHX
-        for k in 1:len
-            HPlist_aux[k] = translate_YhHX[HPlist[k]]
-        end
+    else
+        return HPlist
     end
-    return
 end
 
 
@@ -1191,7 +1189,7 @@ function middleInd(mp,matrix)
     indexd = matrix[:,1] # This array contains the value of the indices with viable pull moves.
     npullpindex = matrix[:,2] # This array contains the number of pull moves for each index in `indexd`.
     l = length(npullpindex)
-    nb = ones(Int8,l) # `nb` will store the number of accumulated pull moves for each of the indices.
+    nb = ones(Int16,l) # `nb` will store the number of accumulated pull moves for each of the indices.
     nb[1] = npullpindex[1]
     for i in 2:l # Fill `nb`.
         nb[i] = npullpindex[i]+nb[i-1]

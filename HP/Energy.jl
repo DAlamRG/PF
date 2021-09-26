@@ -117,14 +117,3 @@ function energy(N::Int,edo,HPlist::Vector{Amin},geometry::geometries,pfmodel::PF
     end
     return ε/2
 end
-
-
-
-
-
-# Test the energy function
-# edo_test = [[5 6];[5 7];[6 7];[6 8];[5 8];[5 9];[6 9];[7 9];[7 8];[7 7];[7 6];[6 6]]
-
-# HPlist_test= [H,P,P,H,H,P,H,P,P,H,P,H]
-
-# @show(energy(11,edo_test,HPlist_test,square2D,HP3_model))

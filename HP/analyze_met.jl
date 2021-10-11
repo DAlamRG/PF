@@ -113,7 +113,7 @@ function states_met_run(name::String,nrun::Int)
     states = zeros(Int16,(n_amin,dim,ft))
     
     pathname2 = "./output"*"/"*name*"/"*string(nrun)*"_"
-    pulledindices = Int.(readdlm(pathname2*"1_1.csv",','))
+    pulledindices = Int.(vec(readdlm(pathname2*"1_1.csv",',')))
     dirs = dirsf(Int8.(vec(readdlm(pathname2*"1_2.csv",','))))
     
     if geometry == triangular2D || geometry == fcc
@@ -124,7 +124,7 @@ function states_met_run(name::String,nrun::Int)
         
         cont = ns+1
         for i in 2:length(temperatures)
-            pulledindices = Int.(readdlm(pathname2*string(i)*"_1.csv",','))
+            pulledindices = Int.(vec(readdlm(pathname2*string(i)*"_1.csv",',')))
             dirs = dirsf(Int8.(vec(readdlm(pathname2*string(i)*"_2.csv",','))))
             newcoords = readdlm(pathname2*string(i)*"_3.csv",',')
             rd = reconstructStates(N,laststate,HPlist,pulledindices,dirs,newcoords,geometry)
@@ -144,7 +144,7 @@ function states_met_run(name::String,nrun::Int)
 
         cont = ns+1
         for i in 2:length(temperatures)
-            pulledindices = Int.(readdlm(pathname2*string(i)*"_1.csv",','))
+            pulledindices = Int.(vec(readdlm(pathname2*string(i)*"_1.csv",',')))
             dirs = dirsf(Int8.(vec(readdlm(pathname2*string(i)*"_2.csv",','))))
             newcoords1 = readdlm(pathname2*string(i)*"_3_1.csv",',')
             newcoords2 = readdlm(pathname2*string(i)*"_3_2.csv",',')
@@ -211,6 +211,83 @@ end
 
 
 
+
+
+
+"""
+Given a matrix `edo` encoding in it's rows the monomers' positions and a geometry `geometry`; returns another matrix of the same size with the
+actual positions according to the geometry.
+"""
+function transform_positions_geom(edo,geometry::geometries)
+    if geometry == triangular2D
+        newedo = zeros(Float64,size(edo))
+        A = [[-1/2 1];[sqrt(3)/2 0]] # transformation matrix.
+        for k in 1:size(edo)[1]
+            newedo[k,:] = A*edo[k,:]
+        end
+        return newedo
+
+    elseif geometry == fcc
+        newedo = zeros(Float64,size(edo))
+        a1 = [1,1,0]
+        a2 = [0,1,1] 
+        a3 = [1,0,1] # Basis vectors for the Bravais lattice (fcc)
+        for k in 1:size(edo)[1]
+            i,j,k = edo[k,:]
+            newedo[k,:] = i*a1 + j*a2 + k*a3
+        end
+        return newedo
+
+    else
+        return edo
+    end
+end
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+    thermal_der(mat,temps)
+Given a matrix `mat` containing the value for the radius (different runs along the columns) and a list of temperatures `temps`;
+returns a matrix with the values for the derivative with respect to the temperature.
+"""
+function thermal_der(mat,temps)
+    len_temps,nruns = size(mat)
+    mat_ders = zeros(Float64,size(mat))
+    for r in 1:nruns
+        for k in len_temps:-1:1
+            if k == 1
+                mat_ders[k,r] = (mat[k+1,r]-mat[k,r])/(temps[k+1]-temps[k])
+            elseif k == len_temps
+                mat_ders[k,r] = (mat[k,r]-mat[k-1,r])/(temps[k]-temps[k-1])
+            else
+                mat_ders[k,r] = (mat[k+1,r]-mat[k-1,r])/(temps[k+1]-temps[k-1])
+            end
+        end
+    end
+    return mat_ders
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
 """
     analyze_met_geom(name)
 Given the name of the directory `name` where the relevant data is stored; stores the values for the radius of gyration and end to end distance, 
@@ -221,36 +298,55 @@ function analyze_met_geom(name::String)
     # Load the data.
     pathname1 = "./output"*"/"*name*"/"
 
-    HPlist = readdlm(pathname1*"HPlist.csv",',')
+    HPlist = vec(readdlm(pathname1*"HPlist.csv",','))
     HPlist = Amin[amin_dict[j] for j in HPlist]
     nums = readdlm(pathname1*"mc_sweeps.csv",',')[1]
-    temperatures = readdlm(pathname1*"temperatures.csv",',')
+    temperatures = vec(readdlm(pathname1*"temperatures.csv",','))
+    geometry = geom_int(Int(readdlm(pathname1*"geometry.csv",',')[1]))
 
     n_amin = length(HPlist) 
     ns = Int(nums*n_amin)
     n_middle = Int(ceil(ns/2))
+    len_aux = ns-n_middle
 
-    run_states = states_met(name)
+    run_states = states_met(name) # Reconstruct the visited states.
     println("Finished reconstructing visited states")
     nruns = length(run_states)
 
-    rs = zeros(Float64,(length(temperatures),nruns))
+    rs = zeros(Float64,(length(temperatures),nruns)) # This arrays will contain the values for the geometric quantities.
     ees = zeros(Float64,(length(temperatures),nruns))
     for k in 1:nruns
         state = run_states[k]
         cont = 1
-        for t in length(temperatures):-1:1
-            rs_aux = Float64[Rgy(state[:,:,cont+l]) for l in n_middle:(ns-1)]
-            ees_aux = Float64[ee_distance(state[:,:,cont+l]) for l in n_middle:(ns-1)]
+        for t in length(temperatures):-1:1 
+            rs_aux = zeros(Float64,len_aux)
+            ees_aux = zeros(Float64,len_aux)
+            for l in n_middle:(ns-1)
+                state_aux = transform_positions_geom(state[:,:,cont+l],geometry)
+                ind = l - (n_middle-1) 
+                rs_aux[ind] = Rgy(state_aux)
+                ees_aux[ind] = ee_distance(state_aux)
+            end
             rs[t,k] = mean(rs_aux)
             ees[t,k] = mean(ees_aux)
             cont =  cont + ns
         end
     end
     
+    drs = thermal_der(rs,temperatures)
+    dees = thermal_der(ees,temperatures)
+
     writedlm(pathname1*"rs.csv",rs,',')
     writedlm(pathname1*"ees.csv",ees,',')
+    writedlm(pathname1*"drs.csv",drs,',')
+    writedlm(pathname1*"dees.csv",dees,',')
 end
+
+
+
+
+
+
 
 
 
@@ -273,7 +369,7 @@ function analyze_met_thermo(name::String)
     pathname1 = "./output"*"/"*name*"/"
 
     nruns = Int(readdlm(pathname1*"nruns.csv",',')[1])
-    HPlist = readdlm(pathname1*"HPlist.csv",',')
+    HPlist = vec(readdlm(pathname1*"HPlist.csv",','))
     HPlist = Amin[amin_dict[j] for j in HPlist]
     nums = readdlm(pathname1*"mc_sweeps.csv",',')[1]
     temperatures = readdlm(pathname1*"temperatures.csv",',')
@@ -313,28 +409,7 @@ end
 
 
 
-
-"""
-    thermal_der(mat,temps)
-Given a matrix `mat` containing the value for the radius (different runs along the columns) and a list of temperatures `temps`;
-returns a matrix with the values for the derivative with respect to the temperature.
-"""
-function thermal_der(mat,temps)
-    len_temps,nruns = size(mat)
-    mat_ders = zeros(Float64,size(mat))
-    for r in 1:nruns
-        for k in len_temps:-1:1
-            if k == 1
-                mat_ders[k,r] = (mat[k+1,r]-mat[k,r])/(temps[k+1]-temps[k])
-            elseif k == len_temps
-                mat_ders[k,r] = (mat[k,r]-mat[k-1,r])/(temps[k]-temps[k-1])
-            else
-                mat_ders[k,r] = (mat[k+1,r]-mat[k-1,r])/(temps[k+1]-temps[k-1])
-            end
-        end
-    end
-    return mat_ders
-end
+# analyze_met_thermo("simu11")
 
 
 
@@ -355,13 +430,11 @@ end
 
 
 
-
-
 ############# This bit is here to analyze the third simulation ###############
 
 #us3 = readdlm("./output/simu3/us.csv",',')
 #cs3 = readdlm("./output/simu3/cs.csv",',')
-temps = readdlm("./output/simu3/temperatures.csv",',')
+#temps = readdlm("./output/simu3/temperatures.csv",',')
 
 #up = Float64[mean(us3[k,:]) for k in 1:length(temps)]
 #uσs = Float64[std(us3[k,:]) for k in 1:length(temps)]
@@ -371,20 +444,20 @@ temps = readdlm("./output/simu3/temperatures.csv",',')
 # display(scatter(temps,cp,ms=3.5,color="purple",alpha=0.7,xlabel="T",ylabel="c(T)",title="Specific heat per monomer for simu3",label="",ribbon=cσs,fillalpha=0.3))
 
 
-rs = readdlm("./output/simu3/rs.csv",',')
-ees = readdlm("./output/simu3/ees.csv",',')
-rsp = Float64[mean(rs[k,:]) for k in 1:length(temps)]
-rσs = Float64[std(rs[k,:]) for k in 1:length(temps)]
-eep = Float64[mean(ees[k,:]) for k in 1:length(temps)]
-eeσs = Float64[std(ees[k,:]) for k in 1:length(temps)]
-display(scatter(temps,rsp,ms=3.5,color="green",alpha=0.7,xlabel="T",ylabel="Rgy(T)",title="Radius of gyration for simu3",label="",ribbon=rσs,fillalpha=0.3))
-# display(scatter(temps,eep,ms=3.5,color="purple",alpha=0.7,xlabel="T",ylabel="ree(T)",title="End to end distance for simu3",label="",ribbon=eeσs,fillalpha=0.3))
+#rs = readdlm("./output/simu3/rs.csv",',')
+#ees = readdlm("./output/simu3/ees.csv",',')
+#rsp = Float64[mean(rs[k,:]) for k in 1:length(temps)]
+#rσs = Float64[std(rs[k,:]) for k in 1:length(temps)]
+#eep = Float64[mean(ees[k,:]) for k in 1:length(temps)]
+#eeσs = Float64[std(ees[k,:]) for k in 1:length(temps)]
+#display(scatter(temps,rsp,ms=3.5,color="green",alpha=0.7,xlabel="T",ylabel="Rgy(T)",title="Radius of gyration for simu3",label="",ribbon=rσs,fillalpha=0.3))
+#display(scatter(temps,eep,ms=3.5,color="purple",alpha=0.7,xlabel="T",ylabel="ree(T)",title="End to end distance for simu3",label="",ribbon=eeσs,fillalpha=0.3))
 
-drs = thermal_der(rs,temps)
-dees = thermal_der(ees,temps)
-drsp = Float64[mean(drs[k,:]) for k in 1:length(temps)]
-drσs = Float64[std(drs[k,:]) for k in 1:length(temps)]
-deep = Float64[mean(dees[k,:]) for k in 1:length(temps)]
-deeσs = Float64[std(dees[k,:]) for k in 1:length(temps)]
+#drs = readdlm("./output/simu3/rs.csv",',')
+#dees = readdlm("./output/simu3/ees.csv",',')
+#drsp = Float64[mean(drs[k,:]) for k in 1:length(temps)]
+#drσs = Float64[std(drs[k,:]) for k in 1:length(temps)]
+#deep = Float64[mean(dees[k,:]) for k in 1:length(temps)]
+#deeσs = Float64[std(dees[k,:]) for k in 1:length(temps)]
 # display(scatter(temps,drsp,ms=3.5,color="green",alpha=0.7,xlabel="T",ylabel="d/dT Rgy(T)",title="Thermal derivative of the radius of gyration for simu3",label="",ribbon=drσs,fillalpha=0.3))
 # display(scatter(temps,deep,ms=3.5,color="purple",alpha=0.7,xlabel="T",ylabel="d/dT ree(T)",title="Thermal derivative of ree for simu3",label="",ribbon=deeσs,fillalpha=0.3))

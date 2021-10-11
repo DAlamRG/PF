@@ -1,4 +1,4 @@
-using Core: Vector
+
 using Base: Float64, Int16, Int8
 # This script analyzes the data stored in outputWL
 
@@ -79,7 +79,7 @@ function thermo_WL(ti,tf,nTs,name::String)
     pathstring="./outputWL/"
     pathname = pathstring*name
     lngE = readdlm(pathname*"/lngE.csv",',')
-    HPlist = readdlm(pathname*"/HPlist.csv",',')
+    HPlist = vec(readdlm(pathname*"/HPlist.csv",','))
     n = length(HPlist)
 
     lngE = Dict{Float64,Float64}(lngE[i,1] => lngE[i,2] for i in 1:length(lngE[:,1]))
@@ -115,7 +115,12 @@ function thermo_WL(ti,tf,nTs,name::String)
         Ss[i] = entropyS/n
     end
 
-    return (temperatures,us,cs,Fs,Ss)
+    writedlm(pathname*"/temperatures.csv",temperatures,',')
+    writedlm(pathname*"/us.csv",us,',')
+    writedlm(pathname*"/cs.csv",cs,',')
+    writedlm(pathname*"/Fs.csv",Fs,',')
+    writedlm(pathname*"/Ss.csv",Ss,',')
+
 end
 
 
@@ -123,12 +128,11 @@ end
 
 
 
-temps,us,cs,Fs,Ss = thermo_WL(0.01,2.5,300,"simu1")
+thermo_WL(0.01,1.5,400,"simu4")
 
 
-#plot(temps,us,xlabel="T",ylabel="u(T)",label="",lw=2,color="green",alpha=0.8)
-
-#plot(temps,cs,xlabel="T",ylabel="c(T)",label="",lw=2,color="blue",alpha=0.8)
+#plot(temps,us,xlabel="T",ylabel="",label="u(T)",lw=2,color="green",alpha=0.8);
+# plot(temps,cs,label="c(T)",lw=2,color="blue",alpha=0.8)
 
 #plot(temps,Fs,xlabel="T",ylabel="F(T)",label="",lw=2,color="red",alpha=0.8)
 

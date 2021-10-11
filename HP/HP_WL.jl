@@ -85,6 +85,51 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
     # for the system (I start with just one since the range of possible energies depends entirely on the aminoacid list/geometry/interaction model).
     # Values are the energy density (actually log(g(Eᵢ)) ), where g(Eᵢ) is the energy density.
 
+
+    # Before performing the actual simulation, I'd like to find most of the possible energies. This is crucial.
+
+    es = Float64[]
+    for k in 1:(5000*mcsweep) # Perform 5000 Monte Carlo steps.
+        e1 = energy(N,edo,HPlist,geometry,pfmodel) # Initial energy.
+        npull_1 = countpull(N,edo,HPlist,geometry)[1]
+        # Generate new state by performing a pull-move.
+        edoaux,npull_2 = pullMove(N,edo,HPlist,geometry)[1:2]
+        e2 = energy(N,edoaux,HPlist,geometry,pfmodel) # Energy of the new state
+
+        # There´s a chance that the computed energies are not yet in the dictionary. In that case, we add them.
+        if e1 ∉ keys(enDensityDict)
+            enDensityDict[e1] = 0
+        end
+        if e2 ∉ keys(enDensityDict)
+            enDensityDict[e2] = 0
+        end
+
+        # Next, we need to obtain the density of states for the energies.
+        lg1 = enDensityDict[e1]
+        lg2 = enDensityDict[e2]
+
+        r = rand() # Generate a random number.
+        pμν = exp(lg1-lg2+log(npull_1)-log(npull_2))
+        if r ≤ pμν # Accept the flip.
+            edo = edoaux # Accept the new configuration.  
+        end            
+
+    end
+
+    for e in minimum(keys(enDensityDict)):0
+        if e ∉ keys(enDensityDict)
+            enDensityDict[e2] = 0
+        end
+
+    end
+
+    @show(enDensityDict)
+
+
+
+
+    # Now I do perform the actual simulation. 
+
     cont1 = 1
     for l in 1:27 # This is the number of iterations it takes to make lnf sufficiently small.
         println("cont1= $cont1 /27")
@@ -95,11 +140,11 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
         cont2 = 1
         while (cont2 ≤ numlim2) && (hCond == false)
 
-            for k in 1:(50*mcsweep) # Perform 10^3 Monte Carlo sweeps.
-                
+            for k in 1:(100*mcsweep) # Perform 50 Monte Carlo steps.
                 e1 = energy(N,edo,HPlist,geometry,pfmodel) # Initial energy.
+                npull_1 = countpull(N,edo,HPlist,geometry)[1]
                 # Generate new state by performing a pull-move.
-                edoaux = pullMove(N,edo,HPlist,geometry)[1]
+                edoaux,npull_2 = pullMove(N,edo,HPlist,geometry)[1:2]
                 e2 = energy(N,edoaux,HPlist,geometry,pfmodel) # Energy of the new state
 
                 # There´s a chance that the computed energies are not yet in the dictionary. In that case, we add them.
@@ -122,7 +167,7 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
                 lg2 = enDensityDict[e2]
     
                 r = rand() # Generate a random number.
-                pμν = exp(lg1-lg2)
+                pμν = exp(lg1-lg2+log(npull_1)-log(npull_2))
                 if r ≤ pμν # Accept the flip.
                     edo = edoaux # Accept the new configuration.  
                     enDensityDict[e2] = lg2+lnf # Update the density of states for the new energy (the log actually).

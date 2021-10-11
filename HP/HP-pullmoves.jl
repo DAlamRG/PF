@@ -272,7 +272,7 @@ HIS => P,
 ARG => P,
 LYS => P,
 PRO => H)
-const translate_HPNX = (CYS => X, 
+const translate_HPNX = Dict{Amin,Amin}(CYS => X, 
 MET => H,
 PHE => H, 
 ILE => H,
@@ -292,7 +292,7 @@ HIS => P,
 ARG => P,
 LYS => P,
 PRO => H)  
-const translate_hHPNX = (CYS => X, 
+const translate_hHPNX = Dict{Amin,Amin}(CYS => X, 
 MET => H,
 PHE => H, 
 ILE => H,
@@ -312,7 +312,7 @@ HIS => P,
 ARG => P,
 LYS => P,
 PRO => H)
-const translate_YhHX = (CYS => H, 
+const translate_YhHX = Dict{Amin,Amin}(CYS => H, 
 MET => H,
 PHE => H, 
 ILE => H,
@@ -419,7 +419,7 @@ end
 Given a 3D array `A`, a couple/triad of indices representing coordinates `indices` and a dimension `dim`; returns the indices (coordinate) for 
 the equivalent array with periodic boundary conditions.
 """
-function periodicInd(A::Array{Int8,2},indices,dim::Int) 
+function periodicInd(A,indices,dim::Int) 
     if dim == 2
         lx,ly = size(A)
         ix,iy = indices
@@ -451,7 +451,7 @@ end
 Given a 3D array `A`, a couple/triad of indices representing coordinates `indices` and a dimension `dim`; returns the value of the position `indices` in 
 the equivalent array with periodic boundary conditions.
 """
-function periodicArr(A::Array{Int8,2},indices,dim::Int)
+function periodicArr(A,indices,dim::Int)
     if dim == 2
         lx,ly = size(A)
         ix,iy = indices
@@ -521,7 +521,7 @@ end
 Given a 2D/3D array `red`, a poition `inds`, and a geometry `geometry`; returns the values of the nearest 
 neighbors to the given position. 
 """
-function nearestNeighbors(red::Array{Int8,2},inds,geometry::geometries)
+function nearestNeighbors(red,inds,geometry::geometries)
     A = red
 
     if geometry == cubic
@@ -532,7 +532,7 @@ function nearestNeighbors(red::Array{Int8,2},inds,geometry::geometries)
     
 
     elseif geometry == fcc # Fcc geometry has 12 topological nearest neighbors.
-        x,y,z = inds
+        i,j,k = inds
         nn = Int8[periodicArr(A,[i+1,j,k],3),periodicArr(A,[i-1,j,k],3)
         ,periodicArr(A,[i,j+1,k],3),periodicArr(A,[i,j-1,k],3)
         ,periodicArr(A,[i,j,k+1],3),periodicArr(A,[i,j,k-1],3)
@@ -578,7 +578,7 @@ end
 Given a 2D/3D array `red`,a position `inds`, and a geometry `geometry`; returns the coordinates of the nearest neighbors 
 to the given position. 
 """
-function nearestNeighborsCoords(red::Array{Int8,2},inds,geometry::geometries)
+function nearestNeighborsCoords(red,inds,geometry::geometries)
     A = red
 
     if geometry == cubic
@@ -589,7 +589,7 @@ function nearestNeighborsCoords(red::Array{Int8,2},inds,geometry::geometries)
     
     
     elseif geometry == fcc # First six neighbors are in the same x-y plane. The remaining six are outside.
-        x,y,z = inds
+        i,j,k = inds
         nnc = Vector{Int16}[periodicInd(A,[i+1,j,k],3),periodicInd(A,[i-1,j,k],3)
         ,periodicInd(A,[i,j+1,k],3),periodicInd(A,[i,j-1,k],3)
         ,periodicInd(A,[i,j,k+1],3),periodicInd(A,[i,j,k-1],3)
@@ -636,7 +636,7 @@ end
 Given a 2D/3D array `red`, a couple of coordinates `inds` and `indsp`, and a geometry; returns the coordinates for the empty shared topological
 neighbors of `inds,indsp` for the given geometry. 
 """
-function sharedNeighborsCoords(red::Array{Int8,2},inds,indsp,geometry::geometries)
+function sharedNeighborsCoords(red,inds,indsp,geometry::geometries)
     nnc = nearestNeighborsCoords(red,inds,geometry) # Coordiantes of nearest neigbors to our coord `ind`.
     nn = nearestNeighbors(red,inds,geometry) # Value of nearest neighbors to our index.
     nncp = nearestNeighborsCoords(red,indsp,geometry) # Coordiantes of nearest neigbors to our coord `indsp`.
@@ -673,7 +673,7 @@ end
 Given a 2D/3D array `red`, a couple of coordinates `inds` and `indsp`, and a geometry; returns the coordinates for the empty not-shared neighbor spaces by 
 `inds,indsp` for the given geometry.  
 """
-function excludedNeighborsCoords(red::Array{Int8,2},inds,indsp,geometry::geometries)
+function excludedNeighborsCoords(red,inds,indsp,geometry::geometries)
     nnc = nearestNeighborsCoords(red,inds,geometry) # Coordiantes of nearest neigbors to our index `ind`.
     nn = nearestNeighbors(red,inds,geometry) # Value of nearest neighbors to our index.
     nncp = nearestNeighborsCoords(red,indsp,geometry) # Coordiantes of nearest neigbors to our index `indsp`.

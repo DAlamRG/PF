@@ -220,18 +220,19 @@ function visHP(edo,HPlist,N,geometry,time,temp,camargs)
         edofcc = fccPositions(fccM,N,edo,HPlist)
 
         if camargs[1] 
-            plt = scatter(fccM[:,1],fccM[:,2],fccM[:,3],color="gray",alpha=0.01,label="",markersize=7,camera=camargs[2]
-            ,grid=:false,xlabel="",ylabel="",zlabel=""
+            plt = # scatter(fccM[:,1],fccM[:,2],fccM[:,3],color="gray",alpha=0.01,label="",markersize=7,camera=camargs[2]
+            # ,grid=:false,xlabel="",ylabel="",zlabel=""
+            # ,title="Current protein configuration \n (Time,Temperature)=($time , $temp)")
+            plot(edofcc[:,1],edofcc[:,2],edofcc[:,3],lw=2,markershape=:circle,markercolor=colours ,camera=camargs[2],
+            markersize=7,color="purple",label="",grid=:false,xlabel="",ylabel="",zlabel=""
             ,title="Current protein configuration \n (Time,Temperature)=($time , $temp)")
-            plot!(edofcc[:,1],edofcc[:,2],edofcc[:,3],lw=2,markershape=:circle,markercolor=colours ,camera=camargs[2],
-            markersize=7,color="purple",label="")
             xlims!((minimum(edofcc[:,1])-1,maximum(edofcc[:,1])+1))
             ylims!((minimum(edofcc[:,2])-1,maximum(edofcc[:,2])+1))
             zlims!((minimum(edofcc[:,3])-1,maximum(edofcc[:,3])+1))
 
 
         else
-            plt = scatter(fccM[:,1],fccM[:,2],fccM[:,3],color="gray",alpha=0.2,label="",markersize=7,grid=:false,xlabel="",
+            plt = scatter(fccM[:,1],fccM[:,2],fccM[:,3],color="gray",alpha=0.01,label="",markersize=7,grid=:false,xlabel="",
             ylabel="",zlabel="",title="Current protein configuration \n (Time,Temperature)=($time , $temp)")
             plot!(edofcc[:,1],edofcc[:,2],edofcc[:,3],lw=2,markershape=:circle,markercolor=colours ,markersize=7,color="purple",label="")
             xlims!((minimum(edofcc[:,1])-1,maximum(edofcc[:,1])+1))
@@ -263,38 +264,38 @@ end
 
 
 """
-    gifFolding(name,nrun,nskip,gifname)
+    gifFolding(name,nrun,nskip,fpsec,gifname)
 Given he name of the directory where the data is stored `name`, the run number in the data `nrun`,  the number of frames to be 
-skipped in the animation `nskip`, and a name for the animation `gifname`; saves an animation of the folding process to the directory from where 
+skipped in the animation `nskip`,the number of frames per second `fpsec`, and a name for the animation `gifname`; saves an animation of the folding process to the directory from where 
 the data comes from.
 """
-function gifFolding(name,nrun,nskip,gifname)
+function gifFolding(name,nrun,nskip,fpsec,gifname)
  
     pathname1 = "./output"*"/"*name*"/"
     pathname2 = "./output"*"/"*name*"/"*string(nrun)*"_"
     
-    temperatures = readdlm(pathname1*"temperatures.csv",',')
-    HPlist = readdlm(pathname1*"HPlist.csv",',')
-    HPlist = Amin[amin_dict[i] for i in HPlist]
+    temperatures = vec(readdlm(pathname1*"temperatures.csv",','))
+    HPlistaux = vec(readdlm(pathname1*"HPlist.csv",','))
+    HPlist = Amin[amin_dict[i] for i in HPlistaux]
     initialconf = readdlm(pathname1*"initialconf.csv",',')
     N = Int(readdlm(pathname1*"latticesize.csv",',')[1])
     nums = Int(readdlm(pathname1*"mc_sweeps.csv",',')[1])
-    geometry = geom_int(readdlm(pathname1*"geometry.csv",',')[1])
-
+    geometry = geom_int(Int(readdlm(pathname1*"geometry.csv",',')[1]))
 
     ns = nums*length(HPlist) # Number of total iterations in the simulation.
     ft = Int((length(temperatures)*ns)+1) # Need to add the second term beacuse I am storing the initial configuration.
-    times = 1:nskip:ft # Number of plots to be made.
+    
 
     # Now I need to reconstruct the visited states, according to the geometry
     dim = length(initialconf[1,:])
 
-    edos = zeros(Int64,(length(HPlist),dim,ft))
     pulledindices = Int.(readdlm(pathname2*"1_1.csv",','))
-    dirs = readdlm(pathname2*"1_2.csv",',')
-    dirs = dirsf(dirs) # Data is written as Int type, turn it back to enum type.
+    dirsaux = readdlm(pathname2*"1_2.csv",',')
+    dirs = dirsf(Int8.(vec(dirsaux))) # Data is written as Int type, turn it back to enum type.
 
-    if geometry == triangular2D || geometry == fcc
+    if geometry == fcc
+        times = 1:nskip:ft+Int(nskip)*(12*fpsec) # Number of plots to be made.
+        edos = zeros(Int64,(length(HPlist),dim,ft+Int(nskip)*(12*fpsec)))
         newcoords = readdlm(pathname2*"1_3.csv",',')
         rd = reconstructStates(N,initialconf,HPlist,pulledindices,dirs,newcoords,geometry)
         edos[:,:,1:ns+1] = rd
@@ -302,18 +303,43 @@ function gifFolding(name,nrun,nskip,gifname)
         
         cont = ns+2
         for i in 2:length(temperatures)
-            pulledindices = Int.(readdlm(pathname2*string(i)*"_1.csv",','))
-            dirs = readdlm(pathname2*string(i)*"_2.csv",',')
-            dirs = dirsf(dirs)
+            pulledindices = Int.(vec(readdlm(pathname2*string(i)*"_1.csv",',')))
+            dirsaux = vec(readdlm(pathname2*string(i)*"_2.csv",','))
+            dirs = dirsf(Int8.(dirsaux))
             newcoords = readdlm(pathname2*string(i)*"_3.csv",',')
-            rS = reconstructStates(N,laststate,HPlist,pulledindices,dirs,newcoords,geometry)
-            edos[:,:,cont:cont+(ns-1)] = rS[:,:,2:end] 
-            laststate = rS[:,:,end]
+            rd = reconstructStates(N,laststate,HPlist,pulledindices,dirs,newcoords,geometry)
+            edos[:,:,cont:cont+(ns-1)] = rd[:,:,2:end] 
+            laststate = rd[:,:,end]
             cont = cont+ns
         end
 
+        for i in ft+1:ft+Int(nskip)*(12*fpsec)
+            edos[:,:,i] = laststate
+        end
+
+    elseif geometry == triangular2D
+        times = 1:nskip:ft # Number of plots to be made.
+        edos = zeros(Int64,(length(HPlist),dim,ft))
+        newcoords = readdlm(pathname2*"1_3.csv",',')
+        rd = reconstructStates(N,initialconf,HPlist,pulledindices,dirs,newcoords,geometry)
+        edos[:,:,1:ns+1] = rd
+        laststate = rd[:,:,end]
+
+        cont = ns+2
+        for i in 2:length(temperatures)
+            pulledindices = Int.(vec(readdlm(pathname2*string(i)*"_1.csv",',')))
+            dirsaux = vec(readdlm(pathname2*string(i)*"_2.csv",','))
+            dirs = dirsf(Int8.(dirsaux))
+            newcoords = readdlm(pathname2*string(i)*"_3.csv",',')
+            rd = reconstructStates(N,laststate,HPlist,pulledindices,dirs,newcoords,geometry)
+            edos[:,:,cont:cont+(ns-1)] = rd[:,:,2:end] 
+            laststate = rd[:,:,end]
+            cont = cont+ns
+        end
 
     elseif geometry == square2D
+        times = 1:nskip:ft # Number of plots to be made.
+        edos = zeros(Int64,(length(HPlist),dim,ft))
         newcoords1 = readdlm(pathname2*"1_3_1.csv",',')
         newcoords2 = readdlm(pathname2*"1_3_2.csv",',')
         newcoords = (newcoords1,newcoords2)
@@ -324,14 +350,14 @@ function gifFolding(name,nrun,nskip,gifname)
         cont = ns+2
         for i in 2:length(temperatures)
             pulledindices = Int.(readdlm(pathname2*string(i)*"_1.csv",','))
-            dirs = readdlm(pathname2*string(i)*"_2.csv",',')
-            dirs = dirsf(dirs)
+            dirsaux = vec(readdlm(pathname2*string(i)*"_2.csv",','))
+            dirs = dirsf(Int8.(dirsaux))
             newcoords1 = readdlm(pathname2*string(i)*"_3_1.csv",',')
             newcoords2 = readdlm(pathname2*string(i)*"_3_2.csv",',')
             newcoords = (newcoords1,newcoords2)
-            rS = reconstructStates(N,laststate,HPlist,pulledindices,dirs,newcoords,geometry)
-            edos[:,:,cont:cont+(ns-1)] = rS[:,:,2:end] 
-            laststate = rS[:,:,end]
+            rd = reconstructStates(N,laststate,HPlist,pulledindices,dirs,newcoords,geometry)
+            edos[:,:,cont:cont+(ns-1)] = rd[:,:,2:end] 
+            laststate = rd[:,:,end]
             cont = cont+ns
         end
     end
@@ -355,6 +381,7 @@ function gifFolding(name,nrun,nskip,gifname)
     elseif dim == 3
         counteranim = 1
         animfold = @animate for i in times
+            println("Animation progress:",i,"/$ft")
             counteranim += 1 
             mcnumber = Int(ceil(((i-1)/length(HPlist)))) # Monte Carlo step.
             ind = 0
@@ -363,13 +390,18 @@ function gifFolding(name,nrun,nskip,gifname)
             else
                 ind = Int(ceil((i-1)/ns))
             end
-            temp = temps[ind]
             cameraval = (mod1(2*counteranim,360),30)
-            visHP(edos[:,:,i],HPlist,N,geometry,mcnumber,round(temp,digits=2),(true,cameraval))
+            if i < ft+1
+                visHP(edos[:,:,i],HPlist,N,geometry,mcnumber,round(temps[ind],digits=2),(true,cameraval))
+            else
+                visHP(edos[:,:,i],HPlist,N,geometry,mcnumber,round(temps[1],digits=2),(true,cameraval))
+            end
+
+            
         end
     end
     println("Animation is stored, all that is left to do is to save it to a .gif file.")
-    gif(animfold,pathname1*gifname,fps=24)
+    gif(animfold,pathname1*gifname,fps=fpsec)
 
 end
 
@@ -385,4 +417,4 @@ end
 
 # Test (Ahhh!)
 
-gifFolding("simu2",1,4,"simu2_0.gif")
+# gifFolding("simu7",1,160,16,"simu7_1.gif")

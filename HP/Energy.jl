@@ -46,7 +46,7 @@ Given a 2D/3D array `red`, the list of aminoacid poitions `edo` , an index on th
 geometry; returns the values for the topological neighbors of `ind` for the given geometry. These list of values excludes the values of 
 the indices immediately adjacent to our index.
 """
-function energyNeighbors(red::Array{Int8,2},edo,ind::Int,HPlist::Vector{Amin},geometry::geometries)
+function energyNeighbors(red,edo,ind::Int,HPlist::Vector{Amin},geometry::geometries)
     nnc = nearestNeighborsCoords(red,edo[ind,:],geometry) # Coordiantes of nearest neigbors to our index `ind`.
     nn = nearestNeighbors(red,edo[ind,:],geometry) # Value of nearest neighbors to our index.
 

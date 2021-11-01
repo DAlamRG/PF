@@ -49,7 +49,7 @@ crambin_462D = Protein(hcat(Int16[20 for i in 1:46],Int16(1+6):Int16(46+6)),seq_
 
 
 # display(@time main_met(62,130,0.01,1.2,85,15,crambin_462D,HP1_model,"simu2"))
-display(@time wang_landau(62,crambin_462D,120,HP1_model,"simu4"))
+display(@time wang_landau(62,crambin_462D,30,HP3_model,"simu1"))
 
 
 # display(@time main_met(62,112,0.01,6.0,72,16,crambinaux_462D,HP2_model,"simu11"))

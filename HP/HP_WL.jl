@@ -36,23 +36,105 @@ end
 
 
 """
-    histCondtion(localenergies)
+    histCondtion(localenergies,greek)
 
 Given a dictionary `localenergies` containing the number of times each energy was visited; counts the incidence of each energy. If the
 lowest counted energy is 80 % of the average, return a boolean value `true`.
 """
-function histCondtion(localenergies)
-    val = false
+function histCondtion(localenergies,greek)
+    val  == false
     
-    ocurrences = values(localenergies)
-    hmin = minimum(ocurrences)
-    hmax = maximum(ocurrences)
-    c = (hmax-hmin)/(hmax+hmin)
+    if greek ==  true
+    
+        ocurrences = values(localenergies)
+        hmin = minimum(ocurrences)
+        hmax = maximum(ocurrences)
+        c = (hmax-hmin)/(hmax+hmin)
 
-    if c < 0.2
-        val = true
+        if c < 0.2
+            val = true
+        end
+        return val
+    else
+
+        ocurrences = localenergies
+        hmin = minimum(ocurrences)
+        hmax = maximum(ocurrences)
+        c = (hmax-hmin)/(hmax+hmin)
+
+        if c < 0.2
+            val = true
+        end
+        return val
+
     end
-    return val
+    
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+    metropolis(N,nums,T,protein,pfmodel) 
+
+Given a 2D/3D array size `N`, a number of Monte-Carlo sweeps `nums`, the temperature T, a protein structure `protein` encoding the protein's 
+configuration and an amino acid interaction model `pfmodel`; returns the information necessay to reproduce the visited configuration during the 
+simulation (using the Metropolis-Hastings algorithm) as well as the visited energies.
+"""
+function metropolis(N::Int,nums::Int,T::Float64,protein::Protein,pfmodel::PF_model)  
+    
+    β = 1/T
+    edo = protein.edo
+    HPlist = protein.HPlist
+    geometry = protein.geometry
+    ns = nums*length(HPlist) # Total number of iterations
+
+    prev_state = edo # This variable stores the previous configuration.
+    prev_numpull = countpull(N,edo,HPlist,geometry)[1] # This variable stores the number of possible pull moves for the previous iteration.
+    
+    enstates = zeros(Float64,ns+1) # Stores the energy of each state visited during the simulation.
+    enstates[1] = energy(N,edo,HPlist,geometry,pfmodel) # Compute the energy of the initial state and store it.
+    
+    for l in 2:ns+1 
+        # Generate a new state.
+        newedo,totalpull,indpulled,newcoord,dirpulled = pullMove(N,prev_state,HPlist,geometry)
+        newenergy = energy(N,newedo,HPlist,geometry,pfmodel) # Compute the energy after the pull move.
+        ΔH = newenergy-enstates[l-1] # Compute the energy difference.
+        
+        if ΔH ≤ 0 # We accept the configuration change.
+            prev_state = newedo
+            enstates[l] = newenergy 
+            prev_numpull = totalpull
+
+        else
+            r = rand() # Random number, sampled from uniform distribution over [0,1].
+            exponential = exp(-β*ΔH)
+            q = (prev_numpull)/(totalpull) # This is the quotient of number of pull moves.
+            pστ = q*exponential # This determines the probability of the move in the case ΔH > 0.
+
+            if r < pστ # Accept the move.
+                prev_state = newedo
+                enstates[l] = newenergy 
+                prev_numpull = totalpull
+
+            else # Move is not accepted, the protein´s configuration stays the same.
+                enstates[l] = copy(enstates[l-1])
+                
+            end
+        end
+    end
+
+    return (enstates,prev_state)
+
 end
 
 
@@ -67,12 +149,55 @@ end
 
 
 """
-    wang_landau(N,protein,numlim2,pfmodel::PF_model,name)
+    prev_met(N,nums,ti,tf,nTs,protein,pfmodel)
+
+Given a 2D/3D array size `N`, a number of Monte-Carlo sweeps `nums`, the initial/final temperature `ti(tf)`, a number of temperatures `nTs`,
+a protein structure `protein`, and an amino acid interaction model `pfmodel`; returns an array with all of the visited energies.
+"""
+function prev_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,protein::Protein,pfmodel::PF_model)
+    temperatures = range(ti,stop=tf,length=nTs) # Declare a range of temperatures to be visited.
+    ns = nums*length(protein.HPlist)
+    energies = zeros(Float64,Int((ns*length(temperatures))+1))
+
+    # Perform the first simulation.
+    enstates,laststate = metropolis(N,nums,temperatures[end],protein,pfmodel)
+    energies[1:ns+1] = enstates
+    
+    # For each of the remaining temperatures, employ the Metropolis-Hastings algorithm to store the information about the
+    # visited configurations at the current temperature.
+    cont = ns+2
+    for k in 2:length(temperatures)
+        temp = reverse(temperatures)[k] # temperature at which the simulation is performed
+        proteinaux = Protein(laststate,protein.HPlist,protein.geometry) # Protein structure for the simulation.
+        enstates,laststate = metropolis(N,nums,temp,proteinaux,pfmodel)  # Perfom the simulation.
+        energies[cont:cont+(ns-1)] = enstates[2:end] # Store the visited energies.
+        cont = cont+ns 
+    end
+
+    return energies
+        
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+    wang_landau_beta(N,protein,numlim2,pfmodel::PF_model,name)
 Given a lattice size `N`, a protein structure `protein`, a limit number of iterations `numlim2`, an interaction model `pfmodel` and
 a name where for the fle where the dta will be stored `name`; returns a dictionary whose keys are the visited energies, and 
 it's values are the logarithms of the energy densities.
 """
-function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name::String)
+function wang_landau_beta(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name::String)
     
     edo = protein.edo
     HPlist = protein.HPlist
@@ -81,50 +206,31 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
     mcsweep = length(edo) # Monte Carlo step size.
     
     lnf = 1.0 # Initial value of updating value `log(f)`.
-    enDensityDict = Dict{Float64,Float64}(0 => 0) # Dictionary for the energy densities. Keys are all the possible energy values
-    # for the system (I start with just one since the range of possible energies depends entirely on the aminoacid list/geometry/interaction model).
-    # Values are the energy density (actually log(g(Eᵢ)) ), where g(Eᵢ) is the energy density.
-
 
     # Before performing the actual simulation, I'd like to find most of the possible energies. This is crucial.
+    # To do this, I perform a Metropolis simulation over a range of adequate temperatures.
 
-    es = Float64[]
-    for k in 1:(5000*mcsweep) # Perform 5000 Monte Carlo steps.
-        e1 = energy(N,edo,HPlist,geometry,pfmodel) # Initial energy.
-        npull_1 = countpull(N,edo,HPlist,geometry)[1]
-        # Generate new state by performing a pull-move.
-        edoaux,npull_2 = pullMove(N,edo,HPlist,geometry)[1:2]
-        e2 = energy(N,edoaux,HPlist,geometry,pfmodel) # Energy of the new state
-
-        # There´s a chance that the computed energies are not yet in the dictionary. In that case, we add them.
-        if e1 ∉ keys(enDensityDict)
-            enDensityDict[e1] = 0
-        end
-        if e2 ∉ keys(enDensityDict)
-            enDensityDict[e2] = 0
-        end
-
-        # Next, we need to obtain the density of states for the energies.
-        lg1 = enDensityDict[e1]
-        lg2 = enDensityDict[e2]
-
-        r = rand() # Generate a random number.
-        pμν = exp(lg1-lg2+log(npull_1)-log(npull_2))
-        if r ≤ pμν # Accept the flip.
-            edo = edoaux # Accept the new configuration.  
-        end            
-
+    tf = 2
+    pfn = pfmodel.pf_name
+    if pfn == HP2 
+        tf = 6
+    elseif pfn == HP3
+        tf = 4.6
+    elseif pfn == HPNX || pfn == hHPNX || pfn == YhHX
+        tf = 8
+    elseif pfn == Full1
+        tf = 7
+    elseif pfn == Full2
+        tf = 14
     end
 
-    for e in minimum(keys(enDensityDict)):0
-        if e ∉ keys(enDensityDict)
-            enDensityDict[e2] = 0
-        end
+    es = prev_met(N,100,0.01,tf,20,protein,pfmodel)
+    es = unique(es)
+    @show(es)
 
-    end
-
-    @show(enDensityDict)
-
+    enDensityDict = Dict{Float64,Float64}(e => 0 for e in es) # Dictionary for the energy densities. Keys are all the possible energy values
+    # for the system (I start with just one since the range of possible energies depends entirely on the aminoacid list/geometry/interaction model).
+    # Values are the energy density (actually log(g(Eᵢ)) ), where g(Eᵢ) is the energy density.
 
 
 
@@ -141,11 +247,11 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
         while (cont2 ≤ numlim2) && (hCond == false)
 
             for k in 1:(100*mcsweep) # Perform 50 Monte Carlo steps.
-                e1 = energy(N,edo,HPlist,geometry,pfmodel) # Initial energy.
+                e1 = round(energy(N,edo,HPlist,geometry,pfmodel), digits = 3) # Initial energy.
                 npull_1 = countpull(N,edo,HPlist,geometry)[1]
                 # Generate new state by performing a pull-move.
                 edoaux,npull_2 = pullMove(N,edo,HPlist,geometry)[1:2]
-                e2 = energy(N,edoaux,HPlist,geometry,pfmodel) # Energy of the new state
+                e2 = round(energy(N,edoaux,HPlist,geometry,pfmodel), digits = 3) # Energy of the new state
 
                 # There´s a chance that the computed energies are not yet in the dictionary. In that case, we add them.
                 if e1 ∉ keys(enDensityDict)
@@ -166,9 +272,9 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
                 lg1 = enDensityDict[e1]
                 lg2 = enDensityDict[e2]
     
-                r = rand() # Generate a random number.
-                pμν = exp(lg1-lg2+log(npull_1)-log(npull_2))
-                if r ≤ pμν # Accept the flip.
+                lr = log(rand()) # Generate a random number.
+                pμν = lg1-lg2+log(npull_1)-log(npull_2)
+                if lr ≤ pμν # Accept the flip.
                     edo = edoaux # Accept the new configuration.  
                     enDensityDict[e2] = lg2+lnf # Update the density of states for the new energy (the log actually).
                     localenergies[e2] = localenergies[e2] + 1 # Update the "histogram".
@@ -180,7 +286,7 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
     
             end
 
-            hCond = histCondtion(localenergies)
+            hCond = histCondtion(localenergies,true)
             if hCond == true 
                 println("hCond = ",hCond)
             end
@@ -189,7 +295,7 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
         end
          
         # After the first `while` is completed, we need to change the value of  the modifying constant `f`.
-        lnf= (lnf/2) # Update `f`.
+        lnf = (lnf/2) # Update `f`.
     end
 
     # Next, we need to normalize the dictionary.
@@ -212,3 +318,132 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
     println("WL simulation completed.")
 end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+    wang_landau(N,protein,numlim2,pfmodel,name, energy_bins)
+Given a lattice size `N`, a protein structure `protein`, a limit number of iterations `numlim2`, an interaction model `pfmodel`,
+a name where for the fle where the data will be stored `name` and a number of energy bins `energy_bins`; returns a dictionary whose 
+keys are the visited energies, and it's values are the logarithms of the energy densities.
+"""
+function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name::String,energy_bins::Int)
+    
+    edo = protein.edo
+    HPlist = protein.HPlist
+    geometry = protein.geometry
+
+    mcsweep = length(edo) # Monte Carlo step size.
+    
+    lnf = 1.0 # Initial value of updating value `log(f)`.
+
+    # Before performing the actual simulation, I'd like to find most of the possible energies. This is crucial.
+    # To do this, I perform a Metropolis simulation over a range of adequate temperatures.
+
+    tf = 2
+    pfn = pfmodel.pf_name
+    if pfn == HP2 
+        tf = 6
+    elseif pfn == HP3
+        tf = 4.6
+    elseif pfn == HPNX || pfn == hHPNX || pfn == YhHX
+        tf = 8
+    elseif pfn == Full1
+        tf = 7
+    elseif pfn == Full2
+        tf = 14
+    end
+
+    es = prev_met(N,100,0.01,tf,24,protein,pfmodel)
+    @show(es)
+
+    energies = collect(range(minimum(es),stop = 0,step = energy_bins))
+    enDensityDict = zeros(Float64,length(energies))
+
+    
+    # Now I do perform the actual simulation. 
+
+    cont1 = 1
+    for l in 1:27 # This is the number of iterations it takes to make lnf sufficiently small.
+        println("cont1= $cont1 /27")
+        cont1 = cont1+1 # Update the counter.
+        localenergies = zeros(Int64,length(energies)) # Stores the number of times each energy is visted during the current iteration.
+        
+        hCond = false # True if the histogram is flat enough.
+        cont2 = 1
+        while (cont2 ≤ numlim2) && (hCond == false)
+
+            for k in 1:(100*mcsweep) # Perform 100 Monte Carlo steps.
+                e1 = energy(N,edo,HPlist,geometry,pfmodel) # Initial energy.
+                npull_1 = countpull(N,edo,HPlist,geometry)[1]
+                # Generate new state by performing a pull-move.
+                edoaux,npull_2 = pullMove(N,edo,HPlist,geometry)[1:2]
+                e2 = energy(N,edoaux,HPlist,geometry,pfmodel) # Energy of the new state
+
+                if e2 ≤ minimum(es)
+                    collect!(push!(energies,e2))
+                end
+
+                # Next, we need to obtain the density of states for the energies.
+                ind_e1 = searchsortedfirst(energies,e1)
+                ind_e2 = searchsortedfirst(energies,e2)
+                lg1 = enDensityDict[ind_e1]
+                lg2 = enDensityDict[ind_e2]
+    
+    
+                lr = log(rand()) # Generate a random number.
+                pμν = lg1-lg2+log(npull_1)-log(npull_2)
+                if lr ≤ pμν # Accept the flip.
+                    edo = edoaux # Accept the new configuration.  
+                    enDensityDict[ind_e2] = lg2+lnf # Update the density of states for the new energy (the log actually).
+                    localenergies[ind_e2] = localenergies[ind_e2]+1 # Update the "histogram".
+    
+                else
+                    enDensityDict[ind_e1] = lg1+lnf # Update the density of states for the new energy (the log actually).
+                    localenergies[ind_e1] = localenergies[ind_e1]+1  # Update the "histogram".
+                end            
+    
+            end
+
+            hCond = histCondtion(localenergies,false)
+            if hCond == true 
+                println("hCond = ",hCond)
+            end
+
+            cont2 = cont2 + 1
+        end
+         
+        # After the first `while` is completed, we need to change the value of  the modifying constant `f`.
+        lnf = (lnf/2) # Update `f`.
+    end
+
+    # Next, we need to normalize the dictionary.
+    mrest = minimum(enDensityDict) # Choose the minimum density of states.
+    
+    # Declare a normalized dictionary.
+    lngE = Dict{Float64,Float64}(energies[k] => (enDensityDict[k]-mrest) for k in 1:length(energies))
+
+    # Create the directory which will contain the data collected trough the simulation.
+    pathstring = "./outputWL/"
+    pathname = pathstring*name
+    mkdir(pathname)
+    writedlm(pathname*"/initialconf.csv",edo,',') # Perhaps a tad ineccesary.
+    writedlm(pathname*"/HPlist.csv",Int.(HPlist),',')
+    writedlm(pathname*"/latticesize.csv",N,',') 
+    writedlm(pathname*"/geometry.csv",Int(protein.geometry),',') # Need to import the translation function.
+    writedlm(pathname*"/pfmodel.csv",Int(pfmodel.pf_name),',') # Need to import the dictionary that interprets.
+    writedlm(pathname*"/lngE.csv",lngE,',')
+    
+    println("WL simulation completed.")
+end

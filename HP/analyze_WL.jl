@@ -128,12 +128,18 @@ end
 
 
 
-thermo_WL(0.01,1.5,400,"simu4")
+# thermo_WL(0.01,1.5,400,"simu1")
+pathname = "./outputWL/simu1"
+temps = readdlm(pathname*"/temperatures.csv")
+us = readdlm(pathname*"/us.csv")
+cs = readdlm(pathname*"/cs.csv")
+Fs = readdlm(pathname*"/Fs.csv")
+Ss = readdlm(pathname*"/Ss.csv")
 
 
-#plot(temps,us,xlabel="T",ylabel="",label="u(T)",lw=2,color="green",alpha=0.8);
+# plot(temps,us,xlabel="T",ylabel="",label="u(T)",lw=2,color="green",alpha=0.8);
 # plot(temps,cs,label="c(T)",lw=2,color="blue",alpha=0.8)
 
-#plot(temps,Fs,xlabel="T",ylabel="F(T)",label="",lw=2,color="red",alpha=0.8)
+# plot(temps,Fs,xlabel="T",ylabel="F(T)",label="",lw=2,color="red",alpha=0.8)
 
-#plot(temps,Ss,xlabel="T",ylabel="S(T)",label="",lw=2,color="cyan",alpha=0.8)
+# plot(temps,Ss,xlabel="T",ylabel="S(T)",label="",lw=2,color="cyan",alpha=0.8)

@@ -1,4 +1,5 @@
-using LinearAlgebra: convert
+using StatsBase: minimum, maximum
+using LinearAlgebra: convert, vcat
 
 # This script employs the main function to perform and save the simulations.
 # include("./HP-model.jl")

@@ -54,7 +54,7 @@ function histCondtion(localenergies,greek)
         if c < 0.2
             val = true
         end
-        return val
+        return (val,c)
     else
         ocurrences = localenergies
         hmin = minimum(ocurrences)
@@ -64,7 +64,7 @@ function histCondtion(localenergies,greek)
         if c < 0.2
             val = true
         end
-        return val
+        return (val,c)
 
     end
     
@@ -186,16 +186,16 @@ end
 
 
 """
-    energy_bins(e_min,pfmodel)
-Given a value for the lowest visited energy `e_min` and a folding model `pfmodel`; returns binned energies and an array for the density of states.
+    energy_bins(e_min,e_max,pfmodel)
+Given a value for the lowest/greatest visited energy `e_min/e_max` and a folding model `pfmodel`; returns binned energies and an array for the density of states.
 """
-function energy_bins(e_min,pfmodel::PF_model)
+function energy_bins(e_min,e_max,pfmodel::PF_model)
     pf_M = pfmodel.int_matrix
     aux_vec = setdiff!(abs.(vcat(pf_M...)), [0])
     step_size = maximum(aux_vec)
-    m = abs(e_min)+(0.0001)
+    m = abs(e_min)+(0.0000001)+abs(e_max)
     n_bins = Int(ceil(m/step_size))
-    energies = reverse(collect(0.0001:-step_size:-n_bins*step_size)) 
+    energies = reverse(collect(0.0000001+abs(e_max):-step_size:-n_bins*step_size)) 
     return (energies,zeros(Float64,length(energies)-1))
 end
 
@@ -206,20 +206,30 @@ end
 
 
 """
-update_energy_bins!(e_min,energies,enDensityDict,pfmodel)
-Given a new minimum energy `e_min`, the previous binned energies `energies`, the array containing the density of states `enDensityDict`,
+     update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel)
+Given a new minimum/maximum energy `e_new`, a value `num` (a value of `1/2` indicates that the new energy is lower/greater), the previous binned energies `energies`, the array containing the density of states `enDensityDict`,
 and a folding model; returns updated binned energies.
 """
-function update_energy_bins!(e_min,energies,enDensityDict,pfmodel::PF_model)
+function update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel::PF_model)
     pf_M = pfmodel.int_matrix
     aux_vec = setdiff!(abs.(vcat(pf_M...)), [0])
     step_size = maximum(aux_vec)
-    m = abs(e_min)+minimum(energies)
-    n_bins = Int(ceil(m/step_size))
-    energies1 = collect(range(-n_bins*step_size + minimum(energies),stop=minimum(energies),step = step_size))[1:end-1]
-    energies2 = vcat(energies1,energies)
-    enDensityDict2 = vcat(fill(minimum(enDensityDict),length(energies1)),enDensityDict)
-    return (energies2,enDensityDict2)
+
+    if num == 1
+        m = abs(e_new)+minimum(energies)
+        n_bins = Int(ceil(m/step_size))
+        energies1 = collect(range(-n_bins*step_size + minimum(energies),stop=minimum(energies),step = step_size))[1:end-1]
+        energies2 = vcat(energies1,energies)
+        enDensityDict2 = vcat(fill(minimum(enDensityDict),length(energies1)),enDensityDict)
+        return (energies2,enDensityDict2)
+    else
+        m = abs(e_new)-maximum(energies)
+        n_bins = Int(ceil(m/step_size))
+        energies1 = collect(range(maximum(energies),stop=maximum(energies)+n_bins*step_size,step = step_size))[2:end]
+        energies2 = vcat(energies,energies1)
+        enDensityDict2 = vcat(enDensityDict,fill(minimum(enDensityDict),length(energies1)))
+        return (energies2,enDensityDict2)
+    end
 end
 
 
@@ -375,13 +385,15 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
 
     # Before performing the actual simulation, I'd like to find most of the possible energies. This is crucial.
     # To do this, I perform a Metropolis simulation over a range of adequate temperatures.
-    es = prev_met(N,110,0.01,2.4,24,protein,pfmodel)
-    energies, enDensityDict = energy_bins(minimum(es),pfmodel)
+    es = prev_met(N,170,0.001,2.5,24,protein,pfmodel)
+    energies, enDensityDict = energy_bins(minimum(es),maximum(es),pfmodel)
     @show(energies)
      
-    # Now I do perform the actual simulation. 
+    # Now I perform the actual simulation. 
 
     cont1 = 1
+    hCond_vec = fill(false,27)
+    criteria_vec = zeros(Float64,27)
     for l in 1:27 # This is the number of iterations it takes to make lnf sufficiently small.
         println("cont1= $cont1 /27")
         cont1 = cont1+1 # Update the counter.
@@ -398,11 +410,18 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
                 edoaux,npull_2 = pullMove(N,edo,HPlist,geometry)[1:2]
                 e2 = energy(N,edoaux,HPlist,geometry,pfmodel) # Energy of the new state
 
-                if e2 ≤ minimum(energies)
-                    energies, enDensityDict = update_energy_bins!(e2,energies,enDensityDict,pfmodel)
+                if e2 < energies[1]
+                    energies, enDensityDict = update_energy_bins!(e2,1,energies,enDensityDict,pfmodel)
                     @show(energies)
                     @show(enDensityDict)
                     localenergies = zeros(Int64,length(enDensityDict))
+                    cont2 = 1
+                elseif e2 > energies[end]
+                    energies, enDensityDict = update_energy_bins!(e2,2,energies,enDensityDict,pfmodel)
+                    @show(energies)
+                    @show(enDensityDict)
+                    localenergies = zeros(Int64,length(enDensityDict))
+                    cont2 = 1
                 end
 
                 # Next, we need to obtain the density of states for the energies.
@@ -426,7 +445,7 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
     
             end
 
-            hCond = histCondtion(localenergies,false)
+            hCond, criteria = histCondtion(localenergies,false)
             if hCond == true 
                 println("hCond = ",hCond)
             end
@@ -436,6 +455,8 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
          
         # After the first `while` is completed, we need to change the value of  the modifying constant `f`.
         lnf = (lnf/2) # Update `f`.
+        hCond_vec[l] = hCond
+        criteria_vec[l] = criteria 
     end
 
     # Next, we need to normalize the dictionary.
@@ -450,7 +471,10 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
     mkdir(pathname)
     writedlm(pathname*"/initialconf.csv",edo,',') # Perhaps a tad ineccesary.
     writedlm(pathname*"/HPlist.csv",Int.(HPlist),',')
-    writedlm(pathname*"/latticesize.csv",N,',') 
+    writedlm(pathname*"/latticesize.csv",N,',')
+    writedlm(pathname*"/hCond_vec.csv",Int.(hCond_vec),',')
+    writedlm(pathname*"/hCond_vec.csv",criteria_vec,',')  
+    writedlm(pathname*"/numlim2.csv",numlim2,',') 
     writedlm(pathname*"/geometry.csv",Int(protein.geometry),',') # Need to import the translation function.
     writedlm(pathname*"/pfmodel.csv",Int(pfmodel.pf_name),',') # Need to import the dictionary that interprets.
     writedlm(pathname*"/lngE.csv",lngE,',')

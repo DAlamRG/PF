@@ -368,6 +368,9 @@ function translate_HPlist(HPlist::Vector{Amin},pfmodel::PFmodelname,translate::B
             for k in 1:len
                 HPlist_aux[k] = translate_YhHX[HPlist[k]]
             end
+            
+        elseif pfmodel == Full1 || pfmodel == Full2
+            HPlist_aux = HPlist
         end
         return HPlist_aux
 

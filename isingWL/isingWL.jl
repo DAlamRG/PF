@@ -3,8 +3,6 @@ using StatsBase
 using Statistics
 using DelimitedFiles
 
-# I try my hand at the Ising model using the Wang-Landau algorithm.
-# Pg 427
 
 
 
@@ -63,7 +61,7 @@ Given a 2D array `edo`; returns the energy of the configuration.
 """
 function energy(edo)
 
-    en =0 # Stores the value of the energy
+    en = 0 # Stores the value of the energy
     N = size(edo)[1]
 
     # Iterate over every single place in the lattice. Employ periodic indices.
@@ -71,11 +69,11 @@ function energy(edo)
         sind = periodicArr2D(edo,[i,j]) # Stores the spin of the lattice site.
         nns = [periodicArr2D(edo,[i-1,j]),periodicArr2D(edo,[i,j+1]),periodicArr2D(edo,[i+1,j]),periodicArr2D(edo,[i,j-1])] # Stores the spins for the 
         # nearest neighbors to the considered spin site.
-        localen = sind*(sum(nns)) # COmpute the contribution to the energy coming from the spin located at `[i,j]`.
+        localen = sind*(sum(nns)) # Compute the contribution to the energy coming from the spin located at `[i,j]`.
         en = en+localen
     end
 
-    # We have counted each contribution twice. To fix it, divide by 2. ALso, since energy is negative, multiply by -1.
+    # We have counted each contribution twice. To fix it, divide by 2. Also, since energy is negative, multiply by -1.
     en = (-1/2)*(en)
 
     return en
@@ -141,23 +139,20 @@ end
 
 
 """
-    histCondtion(localenergies)
+    histCondtion(localenergies,percent)
 
-Given a dictionary `localenergies` containing the number of times each energy was visited; counts the incidence of each energy. If the
-lowest counted energy is 80 % of the average, return a boolean value `true`.
+Given a dictionary `localenergies` containing the number of times each energy was visited and a percentage `percent`; counts the incidence of each energy. If the
+lowest counted energy is `percent` % of the average, return a boolean value `true`.
 """
-function histCondtion(localenergies)
-    val = false
+function histCondtion(localenergies,percent)
     
     ocurrences = values(localenergies)
     hmin = minimum(ocurrences)
-    hmax = maximum(ocurrences)
-    c = (hmax-hmin)/(hmax+hmin)
+    m = mean(ocurrences)
+    err = (m-hmin)/m
+    val = hmin ≥ m*(percent*1e-2) 
 
-    if c < 0.2
-        val = true
-    end
-    return val
+    return (val,err)
 end
 
 
@@ -185,21 +180,22 @@ function ising2DWL(edo,numlim2)
     mcsweep = N^2 # Monte Carlo sweep/step size.
     sizeSyst = 2*mcsweep
     
-    lnf = 1 # Initial value of updating value `log(f)`.
-    enDensityDict = Dict{Int64,Float64}(i => 0 for i in range(-sizeSyst,stop=sizeSyst,step=4)) # Dictionary for the energy densities. Keys are all the possible energy values
+    lnf = 1.0 # Initial value of updating value `log(f)`.
+    enDensityDict = Dict{Int64,Float64}(-sizeSyst => 0) # Dictionary for the energy densities. Keys are all the possible energy values
     # for the system. Values are the energy density (actually log(g(Eᵢ)) ).
 
     cont1 = 1
-    for l in 1:27
-        cont1 = cont1+1 # Update the counter.
+    err = 10.0
+    for l in 1:27 #27
         println("cont1= ",cont1)
-        localenergies = Dict{Int64,Int64}(i => 0 for i in range(-sizeSyst,stop=sizeSyst,step=4)) # Stores the number of times each energy is visted during the current iteration.
+        cont1 = cont1+1 # Update the counters.
+        localenergies = Dict{Int64,Int64}(i => 0 for i in keys(enDensityDict)) # Stores the number of times each energy is visted during the current iteration.
         
         hCond = false
         cont2 = 1
         while (cont2 ≤ numlim2) && (hCond == false)
 
-            for k in 1:(100*mcsweep) # Perform 10^3 Monte Carlo sweeps.
+            for k in 1:(10000*mcsweep) # Perform 10^4 Monte Carlo sweeps.
                 
                 e1 = Int(energy(edo)) # Initial energy.
                 # Generate position to flip.
@@ -209,27 +205,19 @@ function ising2DWL(edo,numlim2)
                 e2 = Int(e1+difE) # Energy of the new state
 
                 # There´s a chance that the computed energies are not yet in the dictionary. In that case, we add them.
-                #if e1 ∉ keys(enDensityDict)
-                #    enDensityDict[e1] = 0
-                #end
-                #if e2 ∉ keys(enDensityDict)
-                #    enDensityDict[e2] = 0
-                #end
-
-                #if e1 ∉ keys(localenergies)
-                #    localenergies[e1] = 0
-                #end
-                #if e2 ∉ keys(localenergies)
-                #    localenergies[e2] = 0
-                #end
-    
+                if e2 ∉ keys(enDensityDict)
+                    enDensityDict[e2] = 0
+                    localenergies[e2] = 0
+                    cont2 = 1
+                end
+            
                 # Next, we need to obtain the density of states for the energies.
                 lg1 = enDensityDict[e1]
                 lg2 = enDensityDict[e2]
     
-                r = rand() # Generate a random number.
-                pμν = exp(lg1-lg2)
-                if r ≤ pμν # Accept the flip.
+                lr = log(rand()) # Generate a random number, then compute it´s log.
+                pμν = lg1-lg2 # This quantity detrmines the transition probability.
+                if lr ≤ pμν # Accept the flip.
                     edo[iflip,jflip] = (-1)*edo[iflip,jflip] # Flip the spin. 
                     enDensityDict[e2] = lg2+lnf # Update the density of states for the new energy (the log actually).
                     localenergies[e2] = localenergies[e2]+1 # Update the "histogram".
@@ -241,7 +229,7 @@ function ising2DWL(edo,numlim2)
     
             end
 
-            hCond = histCondtion(localenergies)
+            hCond, err = histCondtion(localenergies,80)
             if hCond == true 
                 println("hCond= ",hCond)
             end
@@ -252,8 +240,14 @@ function ising2DWL(edo,numlim2)
         # After the first `while` is completed, we need to change the value of  the modifying constant `f`.
         lnf= (lnf/2) # Update `f`.
     end
+
+     # Next, we need to normalize the dictionary.
+     mrest = minimum(values(enDensityDict)) # Choose the minimum density of states.
     
-    return enDensityDict
+     # Declare a normalized dictionary.
+     lngE = Dict{Int64,Float64}(energy => (enDensityDict[energy]-mrest+1) for energy in keys(enDensityDict))
+    
+    return lngE
 end
 
 
@@ -269,50 +263,60 @@ end
 
 
 
+
+#=
 """
-    ising2DWL_2"(edoin,numlim2)
+    ising2DWL_bins(edoin,numlim2)
 Given an initial configuration `edo` and a limit number of iterations `numlim2`; returns a dictionary whose keys are the 
 visited energies, and it´s values are the logarithms of the energy densities.
 """
-function ising2DWL_2(edo,numlim2)
+function ising2DWL_bins(edo,numlim2)
 
     N = size(edo)[1]
     mcsweep = N^2 # Monte Carlo sweep/step size.
     sizeSyst = 2*mcsweep
     
-    lnf = 1 # Initial value of updating value `log(f)`.
-    energies = range(-sizeSyst,stop=sizeSyst,step=4)
-    enDensityDict = zeros(Float64,length(energies)) # Dictionary for the energy densities. Keys are all the possible energy values
-    # for the system. Values are the energy density (actually log(g(Eᵢ)) ).
+    lnf = 1.0 # Initial value of updating value `log(f)`.
+    energies = Float64[-sizeSyst] # Energies accesible to the Ising model on the square lattice, of size N^2 and with J=1.
+    @show(energies)
+    enDensityDict = zeros(Float64,length(energies)) # Dictionary for the energy densities. Values are the energy density (actually log(g(Eᵢ)) ).
 
     cont1 = 1
-    for l in 1:27
-        cont1 = cont1+1 # Update the counter.
+    err = 100.0
+    for l in 1:27 #27
         println("cont1= ",cont1)
-        localenergies = zeros(Int64,length(energies)) # Stores the number of times each energy is visted during the current iteration.
+        cont1 = cont1+1 # Update the counters.
+        localenergies = zeros(Int64,length(enDensityDict))
         
         hCond = false
         cont2 = 1
         while (cont2 ≤ numlim2) && (hCond == false)
 
-            for k in 1:(100*mcsweep) # Perform 10^3 Monte Carlo sweeps.
+            for k in 1:(10000*mcsweep) # Perform 10^4 Monte Carlo sweeps.
                 
                 e1 = Int(energy(edo)) # Initial energy.
+                
                 # Generate position to flip.
-                iflip = rand(1:N)
-                jflip = rand(1:N)
+                iflip, jflip = rand(1:N,2)
                 difE = energyDif(edo,[iflip,jflip]) # Compute the energy difference.
                 e2 = Int(e1+difE) # Energy of the new state
+
+                if e2 ∉ energies 
+                    push!(energies,e2)
+                    push!(enDensityDict,0.0)
+                    push!(localenergies,0)
+                    cont2 = 1
+                end
+
+               # Next, we need to obtain the density of states for the energies.
+               ind_e1 = searchsortedlast(energies,e1)
+               ind_e2 = searchsortedlast(energies,e2)
+               lg1 = enDensityDict[ind_e1]
+               lg2 = enDensityDict[ind_e2]
     
-                # Next, we need to obtain the density of states for the energies.
-                ind_e1 = searchsortedfirst(energies,e1)
-                ind_e2 = searchsortedfirst(energies,e2)
-                lg1 = enDensityDict[ind_e1]
-                lg2 = enDensityDict[ind_e2]
-    
-                r = rand() # Generate a random number.
-                pμν = exp(lg1-lg2)
-                if r ≤ pμν # Accept the flip.
+                lr = log(rand()) # Generate a random number, then compute it´s log.
+                pμν = lg1-lg2 # This quantity detrmines the transition probability.
+                if lr ≤ pμν # Accept the flip.
                     edo[iflip,jflip] = (-1)*edo[iflip,jflip] # Flip the spin. 
                     enDensityDict[ind_e2] = lg2+lnf # Update the density of states for the new energy (the log actually).
                     localenergies[ind_e2] = localenergies[ind_e2]+1 # Update the "histogram".
@@ -324,7 +328,10 @@ function ising2DWL_2(edo,numlim2)
     
             end
 
-            hCond = histCondtion(localenergies)
+            hmin = minimum(localenergies)
+            m = mean(localenergies)
+            err = (m-hmin)/m
+            hCond = hmin ≥ m*(0.75) 
             if hCond == true 
                 println("hCond= ",hCond)
             end
@@ -332,14 +339,21 @@ function ising2DWL_2(edo,numlim2)
             cont2 = cont2+1
         end
          
+        @show(localenergies)
+        @show(err)
         # After the first `while` is completed, we need to change the value of  the modifying constant `f`.
         lnf= (lnf/2) # Update `f`.
     end
+
+    # Next, we need to normalize the dictionary.
+    mrest = minimum(enDensityDict) # Choose the minimum density of states.
     
-    return enDensityDict
+    # Declare a normalized dictionary.
+    lngE = Dict{Int64,Float64}(energies[k] => (enDensityDict[k]-mrest+1) for k in 1:length(energies))
+    
+    return lngE
 end
-
-
+=#
 
 
 
@@ -466,13 +480,13 @@ end
 
 # Next, do a little trial run.
 
-testedo = rand([-1,1],(20,20))
+#testedo = ones(Float64,(10,10))
+#display(testedo)
 
-res = ising2DWL_UCFS(testedo,0.01,5,100,200)
+#res = ising2DWL(testedo,500)
 
-writedlm("/Users/pedroruiz/Desktop/Diego/PF/isingWL/Data/WLN20",res[1])
 
-writedlm("/Users/pedroruiz/Desktop/Diego/PF/isingWL/Data/WLlngE20",res[2])
+#writedlm("/Users/pedroruiz/Desktop/Diego/PF/isingWL/Data/WLlngE10",res)
 
 
 

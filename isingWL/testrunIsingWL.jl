@@ -1,7 +1,8 @@
 using StatsBase: minimum, maximum
-using Base: Int64
+using Base: Int64, Float64
 using DelimitedFiles
 using Plots
+using LaTeXStrings
 gr()
 
 # Here I test the WL algorithm. Plot the internal energy per spin.
@@ -131,8 +132,9 @@ function enSpinIsingWL(us,temps)
     tempsplt=range(0,stop=5,length=201)
     usplt=Float64[enspin(temp,1) for temp in tempsplt]
 
-    plt=scatter(temps,us,ms=5,color="green",xlabel="T",ylabel="u(T)",label="WL",title="WL for Ising model",alpha=0.7,legend=:topleft)
-    plot!(tempsplt,usplt,label="Analytic",color="gray",alpha=0.7,lw=2)
+    plt=plot(temps,us,lw=2.2,color=RGB{Float64}(0.8,0.1,0.3),xlabel=L"$T$",ylabel=L"$u(T)$",label=L"$\textrm{WL}$",title="",
+    alpha=0.8,legend=:topleft)
+    plot!(tempsplt,usplt,label=L"$\textrm{Exacta}$",color="gray",alpha=0.7,lw=2.5)
 
     return plt
 end
@@ -155,8 +157,9 @@ function heatSpinIsingWL(cs,temps)
     tempsplt=range(0,stop=5,length=201)
     csplt=Float64[capspin(temp,1) for temp in tempsplt]
 
-    plt=scatter(temps,abs.(cs),ms=5,color="green",xlabel="T",ylabel="c(T)",label="WL",title="WL for Ising model",alpha=0.7,legend=:topleft)
-    plot!(tempsplt,csplt,label="Analytic",color="gray",alpha=0.7,lw=2)
+    plt=plot(temps,abs.(cs),lw=2.2,color="blue",xlabel=L"$T$",ylabel=L"$c(T)$",label=L"$\textrm{WL}$",
+    title="",alpha=0.7,legend=:topleft)
+    plot!(tempsplt,csplt,label=L"$\textrm{Exacta}$",color="gray",alpha=0.7,lw=2.5)
 
     return plt
 end
@@ -237,10 +240,9 @@ function ising2D_thermo(lngE,ti,tf,l,N)
     lngEaux=Dict{Int64,Float64}(lngE[k,1] => lngE[k,2] for k in 1:size(lngE)[1])
     kk=keys(lngEaux)
     mink=minimum(kk)
-    maxk=maximum(kk)
-    mrest=min(lngEaux[mink],lngEaux[maxk])
+    mrest=lngEaux[mink]
     
-    lngE=Dict{Int64,Float64}(lngE[k,1] => (lngE[k,2]-mrest) for k in 1:size(lngE)[1])
+    lngE=Dict{Int64,Float64}(lngE[k,1] => (lngE[k,2]-mrest+1) for k in 1:size(lngE)[1])
 
     for i in 1:length(temps)
         T=temps[i]
@@ -300,9 +302,9 @@ end
 
 #Load the data. The first column are the temperatures, the second are the energies, the third the specific heats, the fourth the free energies,
 # and the fifth are the entropies.
-lngE=readdlm("./Data/WLlngE16")
+lngE = readdlm("./Data/WLlngE10")
 
-dataWL=ising2D_thermo(lngE,0.1,5,52,16)
+dataWL = ising2D_thermo(lngE,0.01,5,200,10)
 
 # include("testrunIsingWL.jl")
 # enSpinIsingWL(dataWL[:,2],dataWL[:,1])

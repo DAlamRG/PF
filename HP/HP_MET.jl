@@ -308,6 +308,7 @@ function main_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,p
     pathstring = "./output/"
     pathname = pathstring*name
     mkdir(pathname)
+    mkdir(pathname*"/energiesFolder")
     writedlm(pathname*"/temperatures.csv",temperatures,',')
     writedlm(pathname*"/initialconf.csv",protein.edo,',')
     writedlm(pathname*"/HPlist.csv",Int.(protein.HPlist),',')
@@ -361,7 +362,7 @@ function main_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,p
                 laststate = reconstructStates(N,laststate,protein.HPlist,pulledindicesT,dirsT,newcoordsT,protein.geometry)[:,:,end] 
                 println("Temperature Progress: $k /$nTs")
             end
-            writedlm(pathnameaux*"_energies.csv",energies,',') # Save all of the visted energies.
+            writedlm(pathname*"/energiesFolder/"*string(l)*"_energies.csv",energies,',') # Save all of the visted energies.
             println("Number of runs progress : $l /$nruns", )
         end
         
@@ -408,7 +409,7 @@ function main_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,p
                 println("Temperature Progress: $k /$nTs")
             end
 
-            writedlm(pathnameaux*"_energies.csv",energies,',') # Save all of the visted energies.
+            writedlm(pathname*"/energiesFolder/"*string(l)*"_energies.csv",energies,',') # Save all of the visted energies.
             println("Number of runs progress : $l /$nruns", )
 
         end

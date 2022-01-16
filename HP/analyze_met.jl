@@ -384,7 +384,7 @@ function analyze_met_thermo(name::String)
 
     for l in 1:nruns
         # First, import the energies.
-        pathnameaux = pathname1*"/"*string(l)*"_energies.csv"
+        pathnameaux = pathname1*"energiesFolder/"*string(l)*"_energies.csv"
         run_energies = readdlm(pathnameaux,',')[2:end]
 
         cont = 1
@@ -400,64 +400,28 @@ function analyze_met_thermo(name::String)
         println("Finished with run number: ",l)
     end
 
+
+    up = Float64[mean(us[k,:]) for k in 1:length(temperatures)]
+    uσs = Float64[std(us[k,:]) for k in 1:length(temperatures)]
+    cp = Float64[mean(cs[k,:]) for k in 1:length(temperatures)]
+    cσs = Float64[std(cs[k,:]) for k in 1:length(temperatures)]
+
     # Save the thermodynamic variables.
-    writedlm(pathname1*"us.csv",us,',')
-    writedlm(pathname1*"cs.csv",cs,',')
+    mkdir(pathname1*"thermo_quantities")
+    writedlm(pathname1*"thermo_quantities/temperatures.csv",temperatures,',')
+    writedlm(pathname1*"thermo_quantities/up.csv",up,',')
+    writedlm(pathname1*"thermo_quantities/uσs.csv",uσs,',')
+    writedlm(pathname1*"thermo_quantities/cp.csv",cp,',')
+    writedlm(pathname1*"thermo_quantities/cσs.csv",cσs,',')
 end
 
 
 
 
 
-# analyze_met_thermo("simu11")
+analyze_met_thermo("simu_chignolin_HP_square")
 
 
 
 
 
-
-
-################   This bit is to compare the energies between the square and triangular geometries    ################
-# pathnameEnergy1 = "./output"*"/"*"simu4"*"/1_energies.csv"
-
-# pathnameEnergy2 = "./output"*"/"*"simu5"*"/1_energies.csv"
-
-# ens1 = readdlm(pathnameEnergy1,',')
-# ens2 = readdlm(pathnameEnergy2,',')
-
-# plot(1:length(ens1),ens1,color="green",lw=2,xlabel="step",ylabel="Energy per monomer",label="",alpha=0.8)
-# plot!(1:length(ens2),ens2,lw=1.5,alpha=0.5,label="",color="purple")
-
-
-
-############# This bit is here to analyze the third simulation ###############
-
-#us3 = readdlm("./output/simu3/us.csv",',')
-#cs3 = readdlm("./output/simu3/cs.csv",',')
-#temps = readdlm("./output/simu3/temperatures.csv",',')
-
-#up = Float64[mean(us3[k,:]) for k in 1:length(temps)]
-#uσs = Float64[std(us3[k,:]) for k in 1:length(temps)]
-#cp = Float64[mean(cs3[k,:]) for k in 1:length(temps)]
-#cσs = Float64[std(cs3[k,:]) for k in 1:length(temps)]
-#display(scatter(temps,up,ms=3.5,color="green",alpha=0.7,xlabel="T",ylabel="u(T)",title="Internal energy per monomer for simu3",label="",ribbon=uσs,fillalpha=0.3))
-# display(scatter(temps,cp,ms=3.5,color="purple",alpha=0.7,xlabel="T",ylabel="c(T)",title="Specific heat per monomer for simu3",label="",ribbon=cσs,fillalpha=0.3))
-
-
-#rs = readdlm("./output/simu3/rs.csv",',')
-#ees = readdlm("./output/simu3/ees.csv",',')
-#rsp = Float64[mean(rs[k,:]) for k in 1:length(temps)]
-#rσs = Float64[std(rs[k,:]) for k in 1:length(temps)]
-#eep = Float64[mean(ees[k,:]) for k in 1:length(temps)]
-#eeσs = Float64[std(ees[k,:]) for k in 1:length(temps)]
-#display(scatter(temps,rsp,ms=3.5,color="green",alpha=0.7,xlabel="T",ylabel="Rgy(T)",title="Radius of gyration for simu3",label="",ribbon=rσs,fillalpha=0.3))
-#display(scatter(temps,eep,ms=3.5,color="purple",alpha=0.7,xlabel="T",ylabel="ree(T)",title="End to end distance for simu3",label="",ribbon=eeσs,fillalpha=0.3))
-
-#drs = readdlm("./output/simu3/rs.csv",',')
-#dees = readdlm("./output/simu3/ees.csv",',')
-#drsp = Float64[mean(drs[k,:]) for k in 1:length(temps)]
-#drσs = Float64[std(drs[k,:]) for k in 1:length(temps)]
-#deep = Float64[mean(dees[k,:]) for k in 1:length(temps)]
-#deeσs = Float64[std(dees[k,:]) for k in 1:length(temps)]
-# display(scatter(temps,drsp,ms=3.5,color="green",alpha=0.7,xlabel="T",ylabel="d/dT Rgy(T)",title="Thermal derivative of the radius of gyration for simu3",label="",ribbon=drσs,fillalpha=0.3))
-# display(scatter(temps,deep,ms=3.5,color="purple",alpha=0.7,xlabel="T",ylabel="d/dT ree(T)",title="Thermal derivative of ree for simu3",label="",ribbon=deeσs,fillalpha=0.3))

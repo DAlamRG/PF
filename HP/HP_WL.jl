@@ -38,34 +38,26 @@ end
 """
     histCondtion(localenergies,greek)
 
-Given a dictionary `localenergies` containing the number of times each energy was visited; counts the incidence of each energy. If the
-lowest counted energy is 80 % of the average, return a boolean value `true`.
+Given a dictionary `localenergies` containing the number of times each energy was visited and a percentage `percent`; counts the incidence of each energy. If the
+lowest counted energy is `percent` % of the average, return a boolean value `true`.
 """
-function histCondtion(localenergies,greek)
+function histCondtion(localenergies,percent,greek)
     val  = false
     
     if greek ==  true
-    
         ocurrences = values(localenergies)
         hmin = minimum(ocurrences)
-        hmax = maximum(ocurrences)
-        c = (hmax-hmin)/(hmax+hmin)
-
-        if c < 0.2
-            val = true
-        end
-        return (val,c)
+        m = mean(ocurrences)
+        err = (m-hmin)/m
+        val = hmin ≥ m*(percent*1e-2)
+        return (val,err)
     else
         ocurrences = localenergies
         hmin = minimum(ocurrences)
-        hmax = maximum(ocurrences)
-        c = (hmax-hmin)/(hmax+hmin)
-
-        if c < 0.2
-            val = true
-        end
-        return (val,c)
-
+        m = mean(ocurrences)
+        err = (m-hmin)/m
+        val = hmin ≥ m*(percent*1e-2)
+        return (val,err)
     end
     
 end
@@ -393,17 +385,18 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
 
     cont1 = 1
     hCond_vec = fill(false,27)
-    criteria_vec = zeros(Float64,27)
+    err_vec = zeros(Float64,27)
     for l in 1:27 # This is the number of iterations it takes to make lnf sufficiently small.
         println("cont1= $cont1 /27")
         cont1 = cont1+1 # Update the counter.
         localenergies = zeros(Int64,length(enDensityDict)) # Stores the number of times each energy is visted during the current iteration.
         
         hCond = false # True if the histogram is flat enough.
+        err = 10.0
         cont2 = 1
         while (cont2 ≤ numlim2) && (hCond == false)
 
-            for k in 1:(100*mcsweep) # Perform 100 Monte Carlo steps.
+            for k in 1:(1000*mcsweep) # Perform 1000 Monte Carlo steps.
                 e1 = energy(N,edo,HPlist,geometry,pfmodel) # Initial energy.
                 npull_1 = countpull(N,edo,HPlist,geometry)[1]
                 # Generate new state by performing a pull-move.
@@ -445,7 +438,7 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
     
             end
 
-            hCond, criteria = histCondtion(localenergies,false)
+            hCond, err = histCondtion(localenergies,80,false)
             if hCond == true 
                 println("hCond = ",hCond)
             end
@@ -456,7 +449,7 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
         # After the first `while` is completed, we need to change the value of  the modifying constant `f`.
         lnf = (lnf/2) # Update `f`.
         hCond_vec[l] = hCond
-        criteria_vec[l] = criteria 
+        err_vec[l] = err
     end
 
     # Next, we need to normalize the dictionary.
@@ -473,7 +466,7 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
     writedlm(pathname*"/HPlist.csv",Int.(HPlist),',')
     writedlm(pathname*"/latticesize.csv",N,',')
     writedlm(pathname*"/hCond_vec.csv",Int.(hCond_vec),',')
-    writedlm(pathname*"/hCond_vec.csv",criteria_vec,',')  
+    writedlm(pathname*"/err_vec.csv",err_vec,',')  
     writedlm(pathname*"/numlim2.csv",numlim2,',') 
     writedlm(pathname*"/geometry.csv",Int(protein.geometry),',') # Need to import the translation function.
     writedlm(pathname*"/pfmodel.csv",Int(pfmodel.pf_name),',') # Need to import the dictionary that interprets.

@@ -128,16 +128,16 @@ end
 
 
 
-#thermo_WL(0.01,2.5,400,"simu6")
+#thermo_WL(0.01,1.5,400,"simu_chignolin_Full1_square")
 
-
-pathname = "./outputWL/simu6/"
+#=
+pathname = "./outputWL/simu_chignolin_Full1_square/"
 temps = vec(readdlm(pathname*"/temperatures.csv"))
 us = vec(readdlm(pathname*"/us.csv"))
 cs = vec(readdlm(pathname*"/cs.csv"))
 Fs = vec(readdlm(pathname*"/Fs.csv"))
 Ss = vec(readdlm(pathname*"/Ss.csv"))
-
+=#
 
 # plot(temps,us,xlabel="T",ylabel="",label="u(T)",lw=2,color="green",alpha=0.8)
 # plot(temps,cs,label="c(T)",lw=2,color="blue",alpha=0.8)

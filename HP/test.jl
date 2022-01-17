@@ -5,8 +5,8 @@ using LinearAlgebra: convert, vcat
 
 
 
-include("./HP_MET.jl")
-#include("./HP_WL.jl")
+#include("./HP_MET.jl")
+include("./HP_WL.jl")
 
 
 
@@ -76,11 +76,12 @@ villin = convert_Amin("LSDEDFKAVFGMTRSAFANLPLWLQQHLLKEKGLF") # https://www.rcsb.
 
 
 
-chignolin_HP_square = Protein(hcat(Int16[10 for i in 1:10],Int16(1+6):Int16(10+6)),translate_HPlist(chignolin,HP1,true),square2D)
+chignolin_HP1_square = Protein(hcat(Int16[10 for i in 1:10],Int16(1+6):Int16(10+6)),translate_HPlist(chignolin,HP1,true),square2D)
+@show(chignolin_HP1_square.HPlist)
+# "name" should follow the format "WL_chignolin_HP1_square"
 
-
-display(@time main_met(22,800,0.01,1.2,200,15,chignolin_HP_square,HP1_model,"simu_chignolin_HP_square"))
-#display(@time wang_landau(22,chignolin_Full1_square,250,Full1_model,"simu_chignolin_Full1_square"))
+#display(@time main_met(22,1000,0.01,1.0,600,16,chignolin_HP1_square,HP1_model,"MET_chignolin_HP1_square"))
+display(@time wang_landau(22,chignolin_HP1_square,250,HP1_model,"WL_chignolin_HP1_square"))
 
 
 

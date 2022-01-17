@@ -128,7 +128,7 @@ end
 
 
 
-#thermo_WL(0.01,1.5,400,"simu_chignolin_Full1_square")
+thermo_WL(0.01,1.0,400,"WL_chignolin_HP1_square")
 
 #=
 pathname = "./outputWL/simu_chignolin_Full1_square/"

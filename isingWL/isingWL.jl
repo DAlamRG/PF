@@ -245,7 +245,7 @@ function ising2DWL(edo,numlim2)
      mrest = minimum(values(enDensityDict)) # Choose the minimum density of states.
     
      # Declare a normalized dictionary.
-     lngE = Dict{Int64,Float64}(energy => (enDensityDict[energy]-mrest+1) for energy in keys(enDensityDict))
+     lngE = Dict{Int64,Float64}(energy => (enDensityDict[energy]-mrest+log(2)) for energy in keys(enDensityDict))
     
     return lngE
 end

@@ -419,7 +419,7 @@ end
 
 
 
-analyze_met_thermo("simu_chignolin_HP_square")
+analyze_met_thermo("MET_chignolin_HP1_square")
 
 
 

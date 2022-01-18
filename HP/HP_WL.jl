@@ -177,18 +177,31 @@ end
 
 
 """
-    energy_bins(e_min,e_max,pfmodel)
-Given a value for the lowest/greatest visited energy `e_min/e_max` and a folding model `pfmodel`; returns binned energies and an array for the density of states.
+    energy_bins(energies,pfmodel)
+Given a vector of the visited energy levels `energies` and a folding model `pfmodel`; returns binned energies and an array for the density of states.
 """
-function energy_bins(e_min,e_max,pfmodel::PF_model)
-    pf_M = pfmodel.int_matrix
-    aux_vec = setdiff!(abs.(vcat(pf_M...)), [0])
-    step_size = maximum(aux_vec)
-    m = abs(e_min)+(0.0000001)+abs(e_max)
-    n_bins = Int(ceil(m/step_size))
-    energies = reverse(collect(0.0000001+abs(e_max):-step_size:-n_bins*step_size)) 
-    return (energies,zeros(Float64,length(energies)-1))
+function energy_bins(energies,pfmodel::PF_model)
+    pf_n = pfmodel.pf_name
+
+    if pf_n == Full1 || pf_n == Full2
+        e_min = min(energies) 
+        e_max = max(energies)
+        pf_M = pfmodel.int_matrix
+        aux_vec = setdiff!(abs.(vcat(pf_M...)), [0])
+        step_size = maximum(aux_vec)
+        m = abs(e_min)+(0.0000001)+abs(e_max)
+        n_bins = Int(ceil(m/step_size))
+        energies = reverse(collect(0.0000001+abs(e_max):-step_size:-n_bins*step_size)) 
+        return (energies,zeros(Float64,length(energies)-1))
+
+    else
+        unique!(energies)
+        sort!(energies)
+        return (energies,zeros(Float64,length(energies)))
+
+    end
 end
+
 
 
 
@@ -202,24 +215,41 @@ Given a new minimum/maximum energy `e_new`, a value `num` (a value of `1/2` indi
 and a folding model; returns updated binned energies.
 """
 function update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel::PF_model)
-    pf_M = pfmodel.int_matrix
-    aux_vec = setdiff!(abs.(vcat(pf_M...)), [0])
-    step_size = maximum(aux_vec)
+    pf_n = pfmodel.pf_name
 
-    if num == 1
-        m = abs(e_new)+minimum(energies)
-        n_bins = Int(ceil(m/step_size))
-        energies1 = collect(range(-n_bins*step_size + minimum(energies),stop=minimum(energies),step = step_size))[1:end-1]
-        energies2 = vcat(energies1,energies)
-        enDensityDict2 = vcat(fill(minimum(enDensityDict),length(energies1)),enDensityDict)
-        return (energies2,enDensityDict2)
+    if pf_n == Full1 || pf_n == Full2 
+        
+        pf_M = pfmodel.int_matrix
+        aux_vec = setdiff!(abs.(vcat(pf_M...)), [0])
+        step_size = maximum(aux_vec)
+        if num == 1
+            m = abs(e_new)+minimum(energies)
+            n_bins = Int(ceil(m/step_size))
+            energies1 = collect(range(-n_bins*step_size + minimum(energies),stop=minimum(energies),step = step_size))[1:end-1]
+            energies2 = vcat(energies1,energies)
+            enDensityDict2 = vcat(fill(minimum(enDensityDict),length(energies1)),enDensityDict)
+            return (energies2,enDensityDict2)
+        else
+            m = abs(e_new)-maximum(energies)
+            n_bins = Int(ceil(m/step_size))
+            energies1 = collect(range(maximum(energies),stop=maximum(energies)+n_bins*step_size,step = step_size))[2:end]
+            energies2 = vcat(energies,energies1)
+            enDensityDict2 = vcat(enDensityDict,fill(minimum(enDensityDict),length(energies1)))
+            return (energies2,enDensityDict2)
+        end
+
     else
-        m = abs(e_new)-maximum(energies)
-        n_bins = Int(ceil(m/step_size))
-        energies1 = collect(range(maximum(energies),stop=maximum(energies)+n_bins*step_size,step = step_size))[2:end]
-        energies2 = vcat(energies,energies1)
-        enDensityDict2 = vcat(enDensityDict,fill(minimum(enDensityDict),length(energies1)))
-        return (energies2,enDensityDict2)
+
+        if num == 1
+            pushfirst!(energies,e_new)
+            enDensityDict2 = vcat(fill(minimum(enDensityDict),1),enDensityDict)
+            return (energies,enDensityDict2)
+        else
+            push!(energies,e_new)
+            enDensityDict2 = vcat(enDensityDict,fill(minimum(enDensityDict),1))
+            return (energies,enDensityDict2)
+        end
+        
     end
 end
 
@@ -377,21 +407,21 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
     # Before performing the actual simulation, I'd like to find most of the possible energies. This is crucial.
     # To do this, I perform a Metropolis simulation over a range of adequate temperatures.
     es = prev_met(N,170,0.001,2.5,24,protein,pfmodel)
-    unique!(es)
-    sort!(es)
-    @show(es)
-    energies, enDensityDict = energy_bins(minimum(es),maximum(es),pfmodel)
+    energies, enDensityDict = energy_bins(es,pfmodel) # enDensityDict contains ln(g(E)) for all of the energies. Initially ln(g(E)) = 0.
+    @show(energies)
     
      
     # Now I perform the actual simulation. 
 
-    cont1 = 1
+    cont1 = 1 # When cont1 = 27, lnf ≤ 10^-8 and the simulation stops.
     hCond_vec = fill(false,27)
     err_vec = zeros(Float64,27)
+    min_edo = copy(edo) # This will contain the state of minimum energy.
+
     for l in 1:27 # This is the number of iterations it takes to make lnf sufficiently small.
         println("cont1= $cont1 /27")
         cont1 = cont1+1 # Update the counter.
-        localenergies = zeros(Int64,length(enDensityDict)) # Stores the number of times each energy is visted during the current iteration.
+        localenergies = zeros(Int64,length(enDensityDict)) # Stores the number of times each energy is visted during the current iteration. This is the histogram.
         
         hCond = false # True if the histogram is flat enough.
         err = 10.0
@@ -411,6 +441,7 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
                     @show(enDensityDict)
                     localenergies = zeros(Int64,length(enDensityDict))
                     cont2 = 1
+                    min_edo = edoaux
                 elseif e2 > energies[end]
                     energies, enDensityDict = update_energy_bins!(e2,2,energies,enDensityDict,pfmodel)
                     @show(energies)
@@ -454,15 +485,16 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
         err_vec[l] = err
     end
 
-    @show(enDensityDict)
-
-    # Next, we need to normalize the dictionary.
-    mrest = minimum(enDensityDict) # Choose the minimum density of states.
-    
     # Declare a normalized dictionary.
-    lngE = Dict{Float64,Float64}(energies[k+1] => (enDensityDict[k]-mrest) for k in 1:length(energies)-1)
-    # Dict{Float64,Float64}((energies[k]+energies[k+1])/2 => (enDensityDict[k]-mrest) for k in 1:length(energies)-1)
+    mrest = minimum(enDensityDict) # Choose the minimum density of states.
+    if pfmodel.pf_name == Full1 || pfmodel.pf_name == Full2_model
+        lngE = Dict{Float64,Float64}(energies[k+1] => (enDensityDict[k]-mrest) for k in 1:length(energies)-1)
+    else
+        lngE = Dict{Float64,Float64}(energies[k] => (enDensityDict[k]-mrest) for k in 1:length(energies))
+    end
     @show(lngE)
+
+
     # Create the directory which will contain the data collected trough the simulation.
     pathstring = "./outputWL/"
     pathname = pathstring*name
@@ -488,75 +520,6 @@ end
 
 
 
-##### This alternative functions are to be used if I want to use the original interaction matrices in the simulations.
-"""
-    energy_bins(energies,pfmodel)
-Given a vector of the visited energy levels `energies` and a folding model `pfmodel`; returns binned energies and an array for the density of states.
-"""
-function energy_bins(energies,pfmodel::PF_model)
-    pf_n = pfmodel.pf_name
-
-    if pf_n == Full1 || pf_n == Full2
-        e_min = min(energies) 
-        e_max = max(energies)
-        pf_M = pfmodel.int_matrix
-        aux_vec = setdiff!(abs.(vcat(pf_M...)), [0])
-        step_size = maximum(aux_vec)
-        m = abs(e_min)+(0.0000001)+abs(e_max)
-        n_bins = Int(ceil(m/step_size))
-        energies = reverse(collect(0.0000001+abs(e_max):-step_size:-n_bins*step_size)) 
-        return (energies,zeros(Float64,length(energies)-1))
-
-    else
-        unique!(energies)
-        sort!(energies)
-        return (energies,zeros(Float64,length(energies)))
-
-    end
-end
 
 
 
-"""
-     update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel)
-Given a new minimum/maximum energy `e_new`, a value `num` (a value of `1/2` indicates that the new energy is lower/greater), the previous binned energies `energies`, the array containing the density of states `enDensityDict`,
-and a folding model; returns updated binned energies.
-"""
-function update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel::PF_model)
-    pf_n = pfmodel.pf_name
-
-    if pf_n == Full1 || pf_n == Full2 
-        
-        pf_M = pfmodel.int_matrix
-        aux_vec = setdiff!(abs.(vcat(pf_M...)), [0])
-        step_size = maximum(aux_vec)
-        if num == 1
-            m = abs(e_new)+minimum(energies)
-            n_bins = Int(ceil(m/step_size))
-            energies1 = collect(range(-n_bins*step_size + minimum(energies),stop=minimum(energies),step = step_size))[1:end-1]
-            energies2 = vcat(energies1,energies)
-            enDensityDict2 = vcat(fill(minimum(enDensityDict),length(energies1)),enDensityDict)
-            return (energies2,enDensityDict2)
-        else
-            m = abs(e_new)-maximum(energies)
-            n_bins = Int(ceil(m/step_size))
-            energies1 = collect(range(maximum(energies),stop=maximum(energies)+n_bins*step_size,step = step_size))[2:end]
-            energies2 = vcat(energies,energies1)
-            enDensityDict2 = vcat(enDensityDict,fill(minimum(enDensityDict),length(energies1)))
-            return (energies2,enDensityDict2)
-        end
-
-    else
-
-        if num == 1
-            pushfirst!(energies,e_new)
-            enDensityDict2 = vcat(fill(minimum(enDensityDict),1),enDensityDict)
-            return (energies,enDensityDict2)
-        else
-            push!(energies,e_new)
-            enDensityDict2 = vcat(enDensityDict,fill(minimum(enDensityDict),1))
-            return (energies,enDensityDict2)
-        end
-        
-    end
-end

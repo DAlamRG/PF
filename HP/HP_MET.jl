@@ -309,6 +309,7 @@ function main_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,p
     pathname = pathstring*name
     mkdir(pathname)
     mkdir(pathname*"/energiesFolder")
+    mkdir(pathname*"/configsFolder")
     writedlm(pathname*"/temperatures.csv",temperatures,',')
     writedlm(pathname*"/initialconf.csv",protein.edo,',')
     writedlm(pathname*"/HPlist.csv",Int.(protein.HPlist),',')
@@ -336,7 +337,7 @@ function main_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,p
         
         
             # Store the output generated in the first simulation.
-            pathnameaux = pathname*"/"*string(l)
+            pathnameaux = pathname*"/configsFolder/"*string(l)
             writedlm(pathnameaux*"_1_1.csv",pulledindicesT,',')
             writedlm(pathnameaux*"_1_2.csv",Int.(dirsT)) # Save only the numbers, not the whole enum type.
             writedlm(pathnameaux*"_1_3.csv",newcoordsT,',')
@@ -381,7 +382,7 @@ function main_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,p
             energies[1:ns+1] = datatemp1[4] # Store the first batch of energies.
     
             # Store the output generated in the first simulation.
-            pathnameaux = pathname*"/"*string(l)
+            pathnameaux = pathname*"/configsFolder/"*string(l)
             writedlm(pathnameaux*"_1_1.csv",pulledindicesT,',')
             writedlm(pathnameaux*"_1_2.csv",Int.(dirsT),',') # Save only the Int value, not the whole enum info.
             writedlm(pathnameaux*"_1_3_1.csv",newcoordsT[1],',')

@@ -18,14 +18,10 @@ include("./HP_WL.jl")
 
 
 
-
-
 # First, define a dictionary to translate between aminoacid symbols (from 1-letter to 3-letter). 
 const dict1_3 =  Dict{String,Amin}("R" => ARG, "H" => HIS, "K" => LYS, "D" => ASP, "E" => GLU,
 "N" => ASN, "C" => CYS, "Q" => GLN, "S" => SER, "T" => THR, "Y" => TYR, "A" => ALA, "G" => GLY,
 "I" => ILE, "L" => LEU, "M" => MET, "F" => PHE, "P" => PRO, "W" => TRP, "V" => VAL)
-
-
 
 """
     convert_Amin(str)
@@ -39,7 +35,6 @@ function convert_Amin(str::String)
     end
     return HPlist
 end
-
 
 # Now, we define some sequences.
 # A good website to search for sequences is https://www.rcsb.org/ or https://www.uniprot.org
@@ -76,12 +71,18 @@ villin = convert_Amin("LSDEDFKAVFGMTRSAFANLPLWLQQHLLKEKGLF") # https://www.rcsb.
 
 
 
-chignolin_HP1_square = Protein(hcat(Int16[10 for i in 1:10],Int16(1+6):Int16(10+6)),translate_HPlist(chignolin,HP1,true),square2D)
-@show(chignolin_HP1_square.HPlist)
+
+trp_cage_HPNX_square = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int16(20+6)), translate_HPlist(trp_cage,HPNX,true),square2D)
+@show(trp_cage_HPNX_square.HPlist)
+
+# chignolin_hHPNX_square = Protein(hcat(Int16[10 for i in 1:10],Int16(1+6):Int16(10+6)),translate_HPlist(chignolin,hHPNX,true),square2D)
+# @show(chignolin_hHPNX_square.HPlist)
+
+
 # "name" should follow the format "WL_chignolin_HP1_square"
 
 #display(@time main_met(22,1000,0.01,1.0,600,16,chignolin_HP1_square,HP1_model,"MET_chignolin_HP1_square"))
-display(@time wang_landau(22,chignolin_HP1_square,250,HP1_model,"WL_chignolin_HP1_square"))
+display(@time wang_landau(32,trp_cage_HPNX_square,250,HPNX_model,"WL_trp_cage_HPNX_square"))
 
 
 

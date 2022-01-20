@@ -127,7 +127,7 @@ end
 
 
 
-thermo_WL(0.01,1.0,400,"WL_trp_cage_HPNX_square")
+thermo_WL(0.01,1.0,400,"WL_trp_cage_HP1_fcc")
 
 
 #=

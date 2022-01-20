@@ -184,8 +184,8 @@ function energy_bins(energies,pfmodel::PF_model)
     pf_n = pfmodel.pf_name
 
     if pf_n == Full1 || pf_n == Full2
-        e_min = min(energies) 
-        e_max = max(energies)
+        e_min = minimum(energies) 
+        e_max = maximum(energies)
         pf_M = pfmodel.int_matrix
         aux_vec = setdiff!(abs.(vcat(pf_M...)), [0])
         step_size = maximum(aux_vec)

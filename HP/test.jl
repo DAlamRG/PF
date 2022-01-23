@@ -67,7 +67,6 @@ villin = convert_Amin("LSDEDFKAVFGMTRSAFANLPLWLQQHLLKEKGLF") # https://www.rcsb.
 
 
 
-
 chignolin_Full1_square = Protein(hcat(Int16[10 for i in 1:10],Int16(1+6):Int16(10+6)), translate_HPlist(chignolin,Full1,true),square2D)
 
 

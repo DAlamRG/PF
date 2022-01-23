@@ -89,7 +89,7 @@ trp_cage_Full1_triangular = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int1
 
 #display(@time main_met(22,1000,0.01,1.0,600,16,chignolin_HP1_square,HP1_model,"MET_chignolin_HP1_square"))
 
-display(@time wang_landau(22,chignolin_Full1_square,80,2,8,Full1_model,"WL_chignolin_Full1_square"))
+display(@time wang_landau(34,trp_cage_Full1_triangular,85,4,6,Full1_model,"WL_trp_cage_Full1_triangular"))
 
 
 

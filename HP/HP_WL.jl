@@ -176,6 +176,13 @@ end
 
 
 
+
+
+
+
+
+
+#=
 """
     energy_bins(energies,pfmodel)
 Given a vector of the visited energy levels `energies` and a folding model `pfmodel`; returns binned energies and an array for the density of states.
@@ -201,6 +208,38 @@ function energy_bins(energies,pfmodel::PF_model)
 
     end
 end
+=#
+"""
+    energy_bins(energies,pfmodel)
+Given a vector of the visited energy levels `energies` and a folding model `pfmodel`; returns binned energies and an array for the density of states.
+"""
+function energy_bins(energies,pfmodel::PF_model)
+    pf_n = pfmodel.pf_name
+
+    if pf_n == Full1 || pf_n == Full2
+        unique!(energies)
+        sort!(energies) #Now, some energies are the same, but numerical errors mean they are repeated. We proceed to remedy this.
+        pf_M = pfmodel.int_matrix
+        m_min = minimum(setdiff!(abs.(vcat(pf_M...)), [0])) # This value is the smallest (in absolute value) interaction matrix entry. 
+        energies2 = Float64[energies[1]] # This array will contain the correctly binned energy levels.
+
+        for i in 1:length(energies)-1
+            e1 = energies[i]
+            e2 = energies[i+1]
+            dif = e2-e1
+            if dif > m_min # Push the energy only if it's different from the previous one (up to a numerical error).
+                push!(energies2,e2)
+            end
+        end
+        return (energies2,zeros(Float64,length(energies2)))
+
+    else
+        unique!(energies)
+        sort!(energies)
+        return (energies,zeros(Float64,length(energies)))
+
+    end
+end
 
 
 
@@ -209,6 +248,14 @@ end
 
 
 
+
+
+
+
+
+
+
+#=
 """
      update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel)
 Given a new minimum/maximum energy `e_new`, a value `num` (a value of `1/2` indicates that the new energy is lower/greater), the previous binned energies `energies`, the array containing the density of states `enDensityDict`,
@@ -252,128 +299,58 @@ function update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel::PF_model)
         
     end
 end
-
-
-
-
-
-
-
-
-
-#=
-"""
-    wang_landau_beta(N,protein,numlim2,pfmodel::PF_model,name)
-Given a lattice size `N`, a protein structure `protein`, a limit number of iterations `numlim2`, an interaction model `pfmodel` and
-a name where for the fle where the dta will be stored `name`; returns a dictionary whose keys are the visited energies, and 
-it's values are the logarithms of the energy densities.
-"""
-function wang_landau_beta(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name::String)
-    
-    edo = protein.edo
-    HPlist = protein.HPlist
-    geometry = protein.geometry
-
-    mcsweep = length(edo) # Monte Carlo step size.
-    
-    lnf = 1.0 # Initial value of updating value `log(f)`.
-
-    # Before performing the actual simulation, I'd like to find most of the possible energies. This is crucial.
-    # To do this, I perform a Metropolis simulation over a range of adequate temperatures.
-
-    es = prev_met(N,100,0.01,2.5,20,protein,pfmodel)
-    es = unique(es)
-    @show(es)
-
-    enDensityDict = Dict{Float64,Float64}(e => 0 for e in es) # Dictionary for the energy densities. Keys are all the possible energy values
-    # for the system (I start with just one since the range of possible energies depends entirely on the aminoacid list/geometry/interaction model).
-    # Values are the energy density (actually log(g(Eᵢ)) ), where g(Eᵢ) is the energy density.
-
-
-    # Now I do perform the actual simulation. 
-
-    cont1 = 1
-    for l in 1:27 # This is the number of iterations it takes to make lnf sufficiently small.
-        println("cont1= $cont1 /27")
-        cont1 = cont1+1 # Update the counter.
-        localenergies = Dict{Float64,Int64}(k => 0 for k in keys(enDensityDict)) # Stores the number of times each energy is visted during the current iteration. This is my "histogram".
-        
-        hCond = false # True if the histogram is flat enough.
-        cont2 = 1
-        while (cont2 ≤ numlim2) && (hCond == false)
-
-            for k in 1:(100*mcsweep) # Perform 50 Monte Carlo steps.
-                e1 = round(energy(N,edo,HPlist,geometry,pfmodel), digits = 3) # Initial energy.
-                npull_1 = countpull(N,edo,HPlist,geometry)[1]
-                # Generate new state by performing a pull-move.
-                edoaux,npull_2 = pullMove(N,edo,HPlist,geometry)[1:2]
-                e2 = round(energy(N,edoaux,HPlist,geometry,pfmodel), digits = 3) # Energy of the new state
-
-                # There´s a chance that the computed energies are not yet in the dictionary. In that case, we add them.
-                if e1 ∉ keys(enDensityDict)
-                    enDensityDict[e1] = 0
-                end
-                if e2 ∉ keys(enDensityDict)
-                    enDensityDict[e2] = 0
-                end
-
-                if e1 ∉ keys(localenergies)
-                    localenergies[e1] = 0
-                end
-                if e2 ∉ keys(localenergies)
-                    localenergies[e2] = 0
-                end
-    
-                # Next, we need to obtain the density of states for the energies.
-                lg1 = enDensityDict[e1]
-                lg2 = enDensityDict[e2]
-    
-                lr = log(rand()) # Generate a random number.
-                pμν = lg1-lg2+log(npull_1)-log(npull_2)
-                if lr ≤ pμν # Accept the flip.
-                    edo = edoaux # Accept the new configuration.  
-                    enDensityDict[e2] = lg2+lnf # Update the density of states for the new energy (the log actually).
-                    localenergies[e2] = localenergies[e2] + 1 # Update the "histogram".
-    
-                else
-                    enDensityDict[e1] = lg1+lnf # Update the density of states for the new energy (the log actually).
-                    localenergies[e1] = localenergies[e1] + 1  # Update the "histogram".
-                end            
-    
-            end
-
-            hCond = histCondtion(localenergies,true)
-            if hCond == true 
-                println("hCond = ",hCond)
-            end
-
-            cont2 = cont2 + 1
-        end
-         
-        # After the first `while` is completed, we need to change the value of  the modifying constant `f`.
-        lnf = (lnf/2) # Update `f`.
-    end
-
-    # Next, we need to normalize the dictionary.
-    mrest = minimum(Float64[val for val in values(enDensityDict)]) # Choose the minimum density of states.
-    
-    # Declare a normalized dictionary.
-    lngE = Dict{Float64,Float64}(k => (enDensityDict[k]-mrest) for k in keys(enDensityDict))
-
-    # Create the directory which will contain the data collected trough the simulation.
-    pathstring = "./outputWL/"
-    pathname = pathstring*name
-    mkdir(pathname)
-    writedlm(pathname*"/initialconf.csv",edo,',') # Perhaps a tad ineccesary.
-    writedlm(pathname*"/HPlist.csv",Int.(HPlist),',')
-    writedlm(pathname*"/latticesize.csv",N,',') 
-    writedlm(pathname*"/geometry.csv",Int(protein.geometry),',') # Need to import the translation function.
-    writedlm(pathname*"/pfmodel.csv",Int(pfmodel.pf_name),',') # Need to import the dictionary that interprets.
-    writedlm(pathname*"/lngE.csv",lngE,',')
-    
-    println("WL simulation completed.")
-end
 =#
+"""
+     update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel)
+Given a new minimum/maximum energy `e_new`, a value `num` (a value of `1/2` indicates that the new energy is lower/greater), the previous binned energies `energies`, the array containing the density of states `enDensityDict`,
+and a folding model; returns updated binned energies.
+"""
+function update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel::PF_model)
+    pf_n = pfmodel.pf_name
+
+    if pf_n == Full1 || pf_n == Full2 
+        
+        pf_M = pfmodel.int_matrix
+        m_min = minimum(setdiff!(abs.(vcat(pf_M...)), [0]))
+       
+        if num == 1
+            dif = energies[1]-e_new
+            if dif > m_min
+                pushfirst!(energies,e_new)
+                enDensityDict2 = vcat(fill(minimum(enDensityDict),1),enDensityDict)
+                return (energies,enDensityDict2)
+            else 
+                enDensityDict[1] = enDensityDict[1]+1 
+                return (energies,enDensityDict)
+            end
+        else
+            dif = e_new-energies[end]
+            if dif > m_min
+                push!(energies,e_new)
+                enDensityDict2 = vcat(enDensityDict,fill(minimum(enDensityDict),1))
+                return (energies,enDensityDict2)
+
+            else
+                enDensityDict[end] = enDensityDict[end]+1 
+                return (energies,enDensityDict)
+            end
+        end
+
+    else
+
+        if num == 1
+            pushfirst!(energies,e_new)
+            enDensityDict2 = vcat(fill(minimum(enDensityDict),1),enDensityDict)
+            return (energies,enDensityDict2)
+        else
+            push!(energies,e_new)
+            enDensityDict2 = vcat(enDensityDict,fill(minimum(enDensityDict),1))
+            return (energies,enDensityDict2)
+        end
+        
+    end
+end
+
 
 
 
@@ -389,12 +366,36 @@ end
 
 
 """
-    wang_landau(N,protein,numlim2,pfmodel,name, energy_bins)
-Given a lattice size `N`, a protein structure `protein`, a limit number of iterations `numlim2`, an interaction model `pfmodel`,
-a name where for the fle where the data will be stored `name`; returns a dictionary whose 
+    num_iters(d::Int,nf::Int)
+Given the number by which we divide log(f) in each iteration `d` and a power `nf`; return the number of iterations neccesary to 
+achieve a small enough modifcation factor.
+"""
+function num_iters(d::Int,nf::Int)
+    k = log(10.0^(-nf))/log(d)
+    n_iters = Int(ceil(-k))
+    return n_iters
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+    wang_landau(N::Int,protein::Protein,numlim2::Int,d::Int,nf::Int,pfmodel::PF_model,name::String)
+Given a lattice size `N`, a protein structure `protein`, a limit number of iterations `numlim2`, a number `d` by which we divide the modification
+factor (log(f) -> log(f)/d), an exponent `nf` which determines the final value of the modification factor (log(f) ≤ 10-nf), an interaction model 
+`pfmodel`, a name where for the fle where the data will be stored `name`; returns a dictionary whose 
 keys are the visited energies, and it's values are the logarithms of the energy densities.
 """
-function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name::String)
+function wang_landau(N::Int,protein::Protein,numlim2::Int,d::Int,nf::Int,pfmodel::PF_model,name::String)
     
     edo = protein.edo
     HPlist = protein.HPlist
@@ -406,20 +407,21 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
 
     # Before performing the actual simulation, I'd like to find most of the possible energies. This is crucial.
     # To do this, I perform a Metropolis simulation over a range of adequate temperatures.
-    es = prev_met(N,170,0.001,2.5,24,protein,pfmodel)
+    es = prev_met(N,180,0.001,3.0,25,protein,pfmodel)
     energies, enDensityDict = energy_bins(es,pfmodel) # enDensityDict contains ln(g(E)) for all of the energies. Initially ln(g(E)) = 0.
     @show(energies)
     
      
     # Now I perform the actual simulation. 
 
-    cont1 = 1 # When cont1 = 27, lnf ≤ 10^-8 and the simulation stops.
-    hCond_vec = fill(false,27)
-    err_vec = zeros(Float64,27)
+    n_iters = num_iters(d,nf)
+    cont1 = 1 # When cont1 = n_iters, lnf ≤ 10^-nf and the simulation stops.
+    hCond_vec = fill(false,n_iters)
+    err_vec = zeros(Float64,n_iters)
     min_edo = copy(edo) # This will contain the state of minimum energy.
 
-    for l in 1:27 # This is the number of iterations it takes to make lnf sufficiently small.
-        println("cont1= $cont1 /27")
+    for l in 1:n_iters # This is the number of iterations it takes to make lnf sufficiently small.
+        println("cont1= $cont1 /$n_iters")
         cont1 = cont1+1 # Update the counter.
         localenergies = zeros(Int64,length(enDensityDict)) # Stores the number of times each energy is visted during the current iteration. This is the histogram.
         
@@ -480,18 +482,22 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
         end
          
         # After the first `while` is completed, we need to change the value of  the modifying constant `f`.
-        lnf = (lnf/2) # Update `f`.
+        lnf = (lnf/d) # Update `f`.
         hCond_vec[l] = hCond
         err_vec[l] = err
+        @show(cont2)
     end
 
     # Declare a normalized dictionary.
     mrest = minimum(enDensityDict) # Choose the minimum density of states.
+    lngE = Dict{Float64,Float64}(energies[k] => (enDensityDict[k]-mrest) for k in 1:length(energies))
+    #=
     if pfmodel.pf_name == Full1 || pfmodel.pf_name == Full2_model
         lngE = Dict{Float64,Float64}(energies[k+1] => (enDensityDict[k]-mrest) for k in 1:length(energies)-1)
     else
         lngE = Dict{Float64,Float64}(energies[k] => (enDensityDict[k]-mrest) for k in 1:length(energies))
     end
+    =#
     @show(lngE)
 
 
@@ -508,16 +514,12 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,pfmodel::PF_model,name
     writedlm(pathname*"/geometry.csv",Int(protein.geometry),',') # Need to import the translation function.
     writedlm(pathname*"/pfmodel.csv",Int(pfmodel.pf_name),',') # Need to import the dictionary that interprets.
     writedlm(pathname*"/lngE.csv",lngE,',')
+    writedlm(pathname*"/lngE.csv",lngE,',')
+    writedlm(pathname*"/params.csv",[d,nf],',')
+    writedlm(pathname*"/min_edo.csv",min_edo,',')
     
     println("WL simulation completed.")
 end
-
-
-
-
-
-
-
 
 
 

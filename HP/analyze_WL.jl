@@ -2,11 +2,10 @@
 using Base: Float64, Int16, Int8
 # This script analyzes the data stored in outputWL
 
-using Plots
 using StatsBase
 using Statistics
 using DelimitedFiles
-gr()
+
 
 
 include("./Energy.jl")
@@ -127,21 +126,6 @@ end
 
 
 
-thermo_WL(0.01,1.0,400,"WL_trp_cage_HP1_fcc")
+thermo_WL(0.01,1.0,800,"WL_chignolin_Full1_square")
 
 
-#=
-pathname = "./outputWL/simu_chignolin_Full1_square/"
-temps = vec(readdlm(pathname*"/temperatures.csv"))
-us = vec(readdlm(pathname*"/us.csv"))
-cs = vec(readdlm(pathname*"/cs.csv"))
-Fs = vec(readdlm(pathname*"/Fs.csv"))
-Ss = vec(readdlm(pathname*"/Ss.csv"))
-=#
-
-# plot(temps,us,xlabel="T",ylabel="",label="u(T)",lw=2,color="green",alpha=0.8)
-# plot(temps,cs,label="c(T)",lw=2,color="blue",alpha=0.8)
-
-# plot(temps,Fs,xlabel="T",ylabel="F(T)",label="",lw=2,color="red",alpha=0.8)
-
-# plot(temps,Ss,xlabel="T",ylabel="S(T)",label="",lw=2,color="cyan",alpha=0.8)

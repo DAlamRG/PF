@@ -491,6 +491,7 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,d::Int,nf::Int,pfmodel
     # Declare a normalized dictionary.
     mrest = minimum(enDensityDict) # Choose the minimum density of states.
     lngE = Dict{Float64,Float64}(energies[k] => (enDensityDict[k]-mrest) for k in 1:length(energies))
+    
     #=
     if pfmodel.pf_name == Full1 || pfmodel.pf_name == Full2_model
         lngE = Dict{Float64,Float64}(energies[k+1] => (enDensityDict[k]-mrest) for k in 1:length(energies)-1)
@@ -498,7 +499,6 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,d::Int,nf::Int,pfmodel
         lngE = Dict{Float64,Float64}(energies[k] => (enDensityDict[k]-mrest) for k in 1:length(energies))
     end
     =#
-    @show(lngE)
 
 
     # Create the directory which will contain the data collected trough the simulation.
@@ -513,7 +513,6 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,d::Int,nf::Int,pfmodel
     writedlm(pathname*"/numlim2.csv",numlim2,',') 
     writedlm(pathname*"/geometry.csv",Int(protein.geometry),',') # Need to import the translation function.
     writedlm(pathname*"/pfmodel.csv",Int(pfmodel.pf_name),',') # Need to import the dictionary that interprets.
-    writedlm(pathname*"/lngE.csv",lngE,',')
     writedlm(pathname*"/lngE.csv",lngE,',')
     writedlm(pathname*"/params.csv",[d,nf],',')
     writedlm(pathname*"/min_edo.csv",min_edo,',')

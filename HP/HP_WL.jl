@@ -514,7 +514,6 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,d::Int,nf::Int,pfmodel
     writedlm(pathname*"/geometry.csv",Int(protein.geometry),',') # Need to import the translation function.
     writedlm(pathname*"/pfmodel.csv",Int(pfmodel.pf_name),',') # Need to import the dictionary that interprets.
     writedlm(pathname*"/lngE.csv",lngE,',')
-    writedlm(pathname*"/lngE.csv",lngE,',')
     writedlm(pathname*"/params.csv",[d,nf],',')
     writedlm(pathname*"/min_edo.csv",min_edo,',')
     

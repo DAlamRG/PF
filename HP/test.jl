@@ -67,7 +67,7 @@ villin = convert_Amin("LSDEDFKAVFGMTRSAFANLPLWLQQHLLKEKGLF") # https://www.rcsb.
 
 
 
-chignolin_HP1_square = Protein(hcat(Int16[10 for i in 1:10],Int16(1+6):Int16(10+6)), translate_HPlist(chignolin,HP1,true),square2D)
+# chignolin_HP1_square = Protein(hcat(Int16[10 for i in 1:10],Int16(1+6):Int16(10+6)), translate_HPlist(chignolin,HP1,true),square2D)
 
 
 trp_cage_HP1_square = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int16(20+6)), translate_HPlist(trp_cage,HP1,true),square2D)
@@ -93,7 +93,7 @@ trp_cage_Full1_triangular = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int1
 # "name" should follow the format "WL_chignolin_HP1_square"
 
 # main_met(22,1000,0.01,1.0,600,16,chignolin_HP1_square,HP1_model,"MET_chignolin_HP1_square")
-wang_landau(24,chignolin_HP1_square,85,2,8,HP1_model,"WL_chignolin_HP1_square")
+wang_landau(34,trp_cage_Full1_square,100,4,6,Full1_model,"WL_trp_cage_Full1_square")
 
 
 

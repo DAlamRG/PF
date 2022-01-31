@@ -314,24 +314,24 @@ function update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel::PF_model)
         m_min = minimum(setdiff!(abs.(vcat(pf_M...)), [0]))
        
         if num == 1
-            dif = energies[1]-e_new
+            dif = abs(energies[1]-e_new)
             if dif > m_min
                 pushfirst!(energies,e_new)
                 enDensityDict2 = vcat(fill(minimum(enDensityDict),1),enDensityDict)
                 return (energies,enDensityDict2)
             else 
-                enDensityDict[1] = enDensityDict[1]+1 
+                energies[1] = e_new
                 return (energies,enDensityDict)
             end
         else
-            dif = e_new-energies[end]
+            dif = abs(e_new-energies[end])
             if dif > m_min
                 push!(energies,e_new)
                 enDensityDict2 = vcat(enDensityDict,fill(minimum(enDensityDict),1))
                 return (energies,enDensityDict2)
 
             else
-                enDensityDict[end] = enDensityDict[end]+1 
+                energies[end] = e_new
                 return (energies,enDensityDict)
             end
         end

@@ -320,7 +320,7 @@ function update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel::PF_model)
                 enDensityDict2 = vcat(fill(minimum(enDensityDict),1),enDensityDict)
                 return (energies,enDensityDict2)
             else 
-                enDensityDict[1] = enDensityDict[1]+1 
+                energies[1] = e_new 
                 return (energies,enDensityDict)
             end
         else
@@ -331,7 +331,7 @@ function update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel::PF_model)
                 return (energies,enDensityDict2)
 
             else
-                enDensityDict[end] = enDensityDict[end]+1 
+                energies[end] = e_new 
                 return (energies,enDensityDict)
             end
         end

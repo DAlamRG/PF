@@ -323,7 +323,7 @@ function main_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,p
 
     if geometry == fcc || geometry == triangular2D
         # Now, perform a Metropolis-Hastings simulation for each temperature in `temperatures`. Sweep the tempeartures `nruns` times.
-        @sync @distributed for l in 1:nruns
+        timeelpased = @elapsed @sync @distributed for l in 1:nruns
             energies = zeros(Float64,Int((ns*length(temperatures))+1)) #Float64[] # Energies for the current run.
         
             # Perform the first simulation.
@@ -366,11 +366,13 @@ function main_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,p
             writedlm(pathname*"/energiesFolder/"*string(l)*"_energies.csv",energies,',') # Save all of the visted energies.
             println("Number of runs progress : $l /$nruns", )
         end
+
+        writedlm(pathname*"/simulationtime.csv",timeelpased,',')
         
         
     elseif geometry == square2D
         # Now, perform a Metropolis-Hastings simulation for each temperature in `temperatures`. Sweep the tempeartures `nruns` times.
-        @sync @distributed for l in 1:nruns
+        timeelapsed = @elapsed @sync @distributed for l in 1:nruns
             energies = zeros(Float64,Int((ns*length(temperatures))+1)) # Energies for the current run.
 
             # Perform the first simulation.
@@ -414,6 +416,7 @@ function main_met(N::Int,nums::Int,ti::Float64,tf::Float64,nTs::Int,nruns::Int,p
             println("Number of runs progress : $l /$nruns", )
 
         end
+        writedlm(pathname*"/simulationtime.csv",timeelpased,',')
 
     end
     

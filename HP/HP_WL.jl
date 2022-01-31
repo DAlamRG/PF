@@ -420,7 +420,7 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,d::Int,nf::Int,pfmodel
     err_vec = zeros(Float64,n_iters)
     min_edo = copy(edo) # This will contain the state of minimum energy.
 
-    for l in 1:n_iters # This is the number of iterations it takes to make lnf sufficiently small.
+    timeelpased = @elapsed for l in 1:n_iters # This is the number of iterations it takes to make lnf sufficiently small.
         println("cont1= $cont1 /$n_iters")
         cont1 = cont1+1 # Update the counter.
         localenergies = zeros(Int64,length(enDensityDict)) # Stores the number of times each energy is visted during the current iteration. This is the histogram.
@@ -514,6 +514,7 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,d::Int,nf::Int,pfmodel
     writedlm(pathname*"/geometry.csv",Int(protein.geometry),',') # Need to import the translation function.
     writedlm(pathname*"/pfmodel.csv",Int(pfmodel.pf_name),',') # Need to import the dictionary that interprets.
     writedlm(pathname*"/lngE.csv",lngE,',')
+    writedlm(pathname*"/time.csv",timeelpased,',')
     writedlm(pathname*"/params.csv",[d,nf],',')
     writedlm(pathname*"/min_edo.csv",min_edo,',')
     

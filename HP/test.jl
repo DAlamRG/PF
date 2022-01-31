@@ -67,13 +67,12 @@ villin = convert_Amin("LSDEDFKAVFGMTRSAFANLPLWLQQHLLKEKGLF") # https://www.rcsb.
 
 
 
-
 chignolin_Full1_square = Protein(hcat(Int16[10 for i in 1:10],Int16(1+6):Int16(10+6)), translate_HPlist(chignolin,Full1,true),square2D)
 
 
-trp_cage_HP1_triangular = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int16(20+6)), translate_HPlist(trp_cage,HP1,true),triangular2D)
-trp_cage_HPNX_triangular = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int16(20+6)), translate_HPlist(trp_cage,HPNX,true),triangular2D)
-trp_cage_Full1_triangular = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int16(20+6)), translate_HPlist(trp_cage,Full1,true),triangular2D)
+#trp_cage_HP1_triangular = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int16(20+6)), translate_HPlist(trp_cage,HP1,true),triangular2D)
+#trp_cage_HPNX_triangular = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int16(20+6)), translate_HPlist(trp_cage,HPNX,true),triangular2D)
+#trp_cage_Full1_triangular = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int16(20+6)), translate_HPlist(trp_cage,Full1,true),triangular2D)
 
 #trp_cage_HP1_fcc = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int16(20+6),Int16[10 for i in 1:20]),translate_HPlist(trp_cage,HP1,true),fcc)
 #trp_cage_HPNX_fcc = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int16(20+6),Int16[10 for i in 1:20]),translate_HPlist(trp_cage,HPNX,true),fcc)

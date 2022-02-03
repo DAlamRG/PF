@@ -420,6 +420,8 @@ end
 
 
 analyze_met_thermo("MET_chignolin_HP1_square")
+analyze_met_thermo("MET_chignolin_HP1_triangular")
+analyze_met_thermo("MET_chignolin_HP1_fcc")
 
 
 

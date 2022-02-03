@@ -126,6 +126,7 @@ end
 
 
 
-thermo_WL(0.01,1.0,800,"WL_chignolin_Full1_square")
-
+#thermo_WL(0.001,0.25,800,"WL_chignolin_Full1_triangular")
+#thermo_WL(0.001,0.25,800,"WL_chignolin_Full1_fcc")
+thermo_WL(0.001,0.5,800,"WL_chignolin_Full1_square")
 

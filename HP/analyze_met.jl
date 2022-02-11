@@ -366,7 +366,7 @@ to the same directory.
 function analyze_met_thermo(name::String)
 
     # Load the data.
-    pathname1 = "./output"*"/"*name*"/"
+    pathname1 = "/Volumes/Sims/Resultados_sims/trp_cage/output"*"/"*name*"/"
 
     nruns = Int(readdlm(pathname1*"nruns.csv",',')[1])
     HPlist = vec(readdlm(pathname1*"HPlist.csv",','))
@@ -402,9 +402,9 @@ function analyze_met_thermo(name::String)
 
 
     up = Float64[mean(us[k,:]) for k in 1:length(temperatures)]
-    uσs = Float64[std(us[k,:]) for k in 1:length(temperatures)]
+    uσs = Float64[std(us[k,:])/sqrt(nruns) for k in 1:length(temperatures)]
     cp = Float64[mean(cs[k,:]) for k in 1:length(temperatures)]
-    cσs = Float64[std(cs[k,:]) for k in 1:length(temperatures)]
+    cσs = Float64[std(cs[k,:])/sqrt(nruns) for k in 1:length(temperatures)]
 
     # Save the thermodynamic variables.
     mkdir(pathname1*"thermo_quantities")
@@ -419,9 +419,10 @@ end
 
 
 
-analyze_met_thermo("MET_chignolin_Full1_square")
-#analyze_met_thermo("MET_chignolin_HP1_triangular")
-#analyze_met_thermo("MET_chignolin_HP1_fcc")
+
+analyze_met_thermo("MET_trp_cage_HP1_square")
+analyze_met_thermo("MET_trp_cage_HP1_triangular")
+analyze_met_thermo("MET_trp_cage_HP1_fcc")
 
 
 

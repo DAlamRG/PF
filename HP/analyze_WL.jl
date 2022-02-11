@@ -128,5 +128,10 @@ end
 
 #thermo_WL(0.001,0.25,800,"WL_chignolin_Full1_triangular")
 #thermo_WL(0.001,0.25,800,"WL_chignolin_Full1_fcc")
-thermo_WL(0.001,0.5,800,"WL_chignolin_Full1_square")
+#thermo_WL(0.001,1.0,800,"WL_trp_cage_HPNX_triangular")
+#thermo_WL(0.001,1.2,1000,"WL_trp_cage_HPNX_triangular")
+thermo_WL(0.0001,2.0,900,"WL_trp_cage_HPNX_fcc")
+#thermo_WL(0.0001,0.2,800,"WL_chignolin_Full1_fcc")
 
+#thermo_WL(0.0001,1.0,800,"WL_trp_cage_HP1_square")
+#thermo_WL(0.0001,1.0,800,"WL_trp_cage_HPNX_fcc")

@@ -223,6 +223,7 @@ function energy_bins(energies,pfmodel::PF_model)
         m_min = minimum(setdiff!(abs.(vcat(pf_M...)), [0])) # This value is the smallest (in absolute value) interaction matrix entry. 
         energies2 = Float64[energies[1]] # This array will contain the correctly binned energy levels.
 
+        @show(m_min)
         for i in 1:length(energies)-1
             e1 = energies[i]
             e2 = energies[i+1]
@@ -301,11 +302,12 @@ function update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel::PF_model)
 end
 =#
 """
-     update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel)
-Given a new minimum/maximum energy `e_new`, a value `num` (a value of `1/2` indicates that the new energy is lower/greater), the previous binned energies `energies`, the array containing the density of states `enDensityDict`,
-and a folding model; returns updated binned energies.
+     update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel,cont2)
+Given a new minimum/maximum energy `e_new`, a value `num` (a value of `1/2` indicates that the new energy is lower/greater), the previous binned energies `energies`, 
+the array containing the density of states `enDensityDict`, a folding model and a value for `cont2`; returns updated binned energies, energy density array and
+cont2.
 """
-function update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel::PF_model)
+function update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel::PF_model,cont2)
     pf_n = pfmodel.pf_name
 
     if pf_n == Full1 || pf_n == Full2 
@@ -318,21 +320,21 @@ function update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel::PF_model)
             if dif > m_min
                 pushfirst!(energies,e_new)
                 enDensityDict2 = vcat(fill(minimum(enDensityDict),1),enDensityDict)
-                return (energies,enDensityDict2)
+                return (energies,enDensityDict2,1)
             else 
                 energies[1] = e_new 
-                return (energies,enDensityDict)
+                return (energies,enDensityDict,cont2)
             end
         else
             dif = e_new-energies[end]
             if dif > m_min
                 push!(energies,e_new)
                 enDensityDict2 = vcat(enDensityDict,fill(minimum(enDensityDict),1))
-                return (energies,enDensityDict2)
+                return (energies,enDensityDict2,1)
 
             else
                 energies[end] = e_new 
-                return (energies,enDensityDict)
+                return (energies,enDensityDict,cont2)
             end
         end
 
@@ -341,11 +343,11 @@ function update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel::PF_model)
         if num == 1
             pushfirst!(energies,e_new)
             enDensityDict2 = vcat(fill(minimum(enDensityDict),1),enDensityDict)
-            return (energies,enDensityDict2)
+            return (energies,enDensityDict2,1)
         else
             push!(energies,e_new)
             enDensityDict2 = vcat(enDensityDict,fill(minimum(enDensityDict),1))
-            return (energies,enDensityDict2)
+            return (energies,enDensityDict2,1)
         end
         
     end
@@ -407,7 +409,7 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,d::Int,nf::Int,pfmodel
 
     # Before performing the actual simulation, I'd like to find most of the possible energies. This is crucial.
     # To do this, I perform a Metropolis simulation over a range of adequate temperatures.
-    es = prev_met(N,180,0.001,3.0,25,protein,pfmodel)
+    es = prev_met(N,1400,0.001,15.0,200,protein,pfmodel)
     energies, enDensityDict = energy_bins(es,pfmodel) # enDensityDict contains ln(g(E)) for all of the energies. Initially ln(g(E)) = 0.
     @show(energies)
     
@@ -438,18 +440,14 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,d::Int,nf::Int,pfmodel
                 e2 = energy(N,edoaux,HPlist,geometry,pfmodel) # Energy of the new state
 
                 if e2 < energies[1]
-                    energies, enDensityDict = update_energy_bins!(e2,1,energies,enDensityDict,pfmodel)
-                    @show(energies)
-                    @show(enDensityDict)
+                    energies, enDensityDict, cont2 = update_energy_bins!(e2,1,energies,enDensityDict,pfmodel,cont2)
+                    #@show(cont2)
                     localenergies = zeros(Int64,length(enDensityDict))
-                    cont2 = 1
                     min_edo = edoaux
                 elseif e2 > energies[end]
-                    energies, enDensityDict = update_energy_bins!(e2,2,energies,enDensityDict,pfmodel)
-                    @show(energies)
-                    @show(enDensityDict)
+                    energies, enDensityDict, cont2 = update_energy_bins!(e2,2,energies,enDensityDict,pfmodel,cont2)
+                    #@show(cont2)
                     localenergies = zeros(Int64,length(enDensityDict))
-                    cont2 = 1
                 end
 
                 # Next, we need to obtain the density of states for the energies.

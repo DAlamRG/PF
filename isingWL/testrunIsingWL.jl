@@ -3,7 +3,7 @@ using Base: Int64, Float64
 using DelimitedFiles
 using Plots
 using LaTeXStrings
-gr()
+pgfplotsx()
 
 # Here I test the WL algorithm. Plot the internal energy per spin.
 include("./isingWL.jl")
@@ -129,11 +129,11 @@ along with the analytical solution over the temperaturerange T∈[0,5]. The tran
 """
 function enSpinIsingWL(us,temps)
 
-    tempsplt=range(0,stop=5,length=201)
-    usplt=Float64[enspin(temp,1) for temp in tempsplt]
+    tempsplt = range(0,stop=5,length=201)
+    usplt = Float64[enspin(temp,1) for temp in tempsplt]
 
-    plt=plot(temps,us,lw=2.2,color=RGB{Float64}(0.8,0.1,0.3),xlabel=L"$T$",ylabel=L"$u(T)$",label=L"$\textrm{WL}$",title="",
-    alpha=0.8,legend=:topleft)
+    plt = plot(temps,us,lw=2.2,color=RGB{Float64}(0.8,0.2,0.3),xlabel=L"$T$",ylabel=L"\langle E \rangle/N",label=L"$\textrm{WL}$",title="",
+    alpha=0.92,legend=:topleft,xguidefontsize=15,yguidefontsize=15,legendfontsize=12,xtickfontsize=13.2,ytickfontsize=13.2,titlefontsize=14)
     plot!(tempsplt,usplt,label=L"$\textrm{Exacta}$",color="gray",alpha=0.7,lw=2.5)
 
     return plt
@@ -154,11 +154,12 @@ along with the analytical solution over the temperature range T∈[0,5]. The tra
 """
 function heatSpinIsingWL(cs,temps)
 
-    tempsplt=range(0,stop=5,length=201)
+    tempsplt = range(0,stop=5,length=201)
     csplt=Float64[capspin(temp,1) for temp in tempsplt]
 
-    plt=plot(temps,abs.(cs),lw=2.2,color="blue",xlabel=L"$T$",ylabel=L"$c(T)$",label=L"$\textrm{WL}$",
-    title="",alpha=0.7,legend=:topleft)
+    plt = plot(temps,abs.(cs),lw=2.2,color=RGB{Float64}(0.5,0.4,0.8),xlabel=L"$T$",ylabel=L"C_{V}/N",label=L"$\textrm{WL}$",
+    title = "",alpha=0.92,legend=:topleft,xguidefontsize=15,yguidefontsize=15,legendfontsize=12,xtickfontsize=13.2,ytickfontsize=13.2,
+    titlefontsize=14)
     plot!(tempsplt,csplt,label=L"$\textrm{Exacta}$",color="gray",alpha=0.7,lw=2.5)
 
     return plt
@@ -180,7 +181,7 @@ range T∈[0,5]. The transition should be located around T=2.3.
 """
 function freeEnIsingWL(fs,temps)
 
-    plt=scatter(temps,fs,ms=5,color="green",xlabel="T",ylabel="f(T)",label="WL",title="WL for Ising model",alpha=0.7,legend=:bottomleft)
+    plt = scatter(temps,fs,ms=5,color="green",xlabel="T",ylabel="f(T)",label="WL",title="WL for Ising model",alpha=0.7,legend=:bottomleft)
     plot!(temps,fs,lw=3,color="lightseagreen",label="",alpha=0.4)
     return plt
 end
@@ -203,7 +204,7 @@ range T∈[0,5]. The transition should be located around T=2.3.
 """
 function entIsingWL(Ss,temps)
 
-    plt=scatter(temps,Ss,ms=5,color="green",xlabel="T",ylabel="s(T)",label="WL",title="WL for Ising model",alpha=0.7,legend=:topleft)
+    plt = scatter(temps,Ss,ms=5,color="green",xlabel="T",ylabel="s(T)",label="WL",title="WL for Ising model",alpha=0.7,legend=:topleft)
     plot!(temps,Ss,lw=3,color="lightseagreen",label="",alpha=0.4)
 
     return plt
@@ -304,7 +305,7 @@ end
 # and the fifth are the entropies.
 lngE = readdlm("./Data/WLlngE10")
 
-dataWL = ising2D_thermo(lngE,0.01,5,200,10)
+dataWL = ising2D_thermo(lngE,0.001,5,250,10)
 
 # include("testrunIsingWL.jl")
 # enSpinIsingWL(dataWL[:,2],dataWL[:,1])

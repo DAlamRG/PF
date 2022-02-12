@@ -301,11 +301,11 @@ function update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel::PF_model)
 end
 =#
 """
-     update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel)
-Given a new minimum/maximum energy `e_new`, a value `num` (a value of `1/2` indicates that the new energy is lower/greater), the previous binned energies `energies`, the array containing the density of states `enDensityDict`,
-and a folding model; returns updated binned energies.
+     update_energy_bins!(e_new,energies,enDensityDict,pfmodel,cont2)
+Given a new minimum/maximum energy `e_new`, the previous binned energies `energies`, the array containing the density of states `enDensityDict`, a folding model 
+and a value for `cont2`; returns updated binned energies, energy density array and cont2.
 """
-function update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel::PF_model)
+function update_energy_bins!(e_new,energies,enDensityDict,pfmodel::PF_model,cont2)
     pf_n = pfmodel.pf_name
 
     if pf_n == Full1 || pf_n == Full2 
@@ -313,44 +313,115 @@ function update_energy_bins!(e_new,num,energies,enDensityDict,pfmodel::PF_model)
         pf_M = pfmodel.int_matrix
         m_min = minimum(setdiff!(abs.(vcat(pf_M...)), [0]))
        
-        if num == 1
-            dif = abs(energies[1]-e_new)
+        if e_new ≤ energies[1]
+            dif = energies[1]-e_new
             if dif > m_min
                 pushfirst!(energies,e_new)
                 enDensityDict2 = vcat(fill(minimum(enDensityDict),1),enDensityDict)
-                return (energies,enDensityDict2)
+                return (energies,enDensityDict2,1)
             else 
-                energies[1] = e_new
-                return (energies,enDensityDict)
+                energies[1] = e_new 
+                return (energies,enDensityDict,cont2)
             end
-        else
-            dif = abs(e_new-energies[end])
+        elseif e_new ≥ energies[end]
+            dif = e_new-energies[end]
             if dif > m_min
                 push!(energies,e_new)
                 enDensityDict2 = vcat(enDensityDict,fill(minimum(enDensityDict),1))
-                return (energies,enDensityDict2)
+                return (energies,enDensityDict2,1)
 
             else
-                energies[end] = e_new
-                return (energies,enDensityDict)
+                energies[end] = e_new 
+                return (energies,enDensityDict,cont2)
+            end
+        else
+            ind_e_new = searchsortedlast(energies,e_new)
+            e₋ = energies[ind_e_new]
+            e₊ = energies[ind_e_new + 1]
+            dif₋ = e_new - e₋
+            dif₊ = e₊ - e_new
+
+            if dif₋ > m_min && dif₊ > m_min
+                insert!(energies, ind_e_new + 1, e_new) 
+                insert!(enDensityDict, ind_e_new + 1, minimum(enDensityDict))
+                return (energies,enDensityDict,1)
+
+            else
+                return (energies,enDensityDict,cont2)
             end
         end
 
     else
 
-        if num == 1
+        if e_new ≤ energies[1]
             pushfirst!(energies,e_new)
             enDensityDict2 = vcat(fill(minimum(enDensityDict),1),enDensityDict)
-            return (energies,enDensityDict2)
-        else
+            return (energies,enDensityDict2,1)
+        elseif e_new > energies[end]
             push!(energies,e_new)
             enDensityDict2 = vcat(enDensityDict,fill(minimum(enDensityDict),1))
-            return (energies,enDensityDict2)
+            return (energies,enDensityDict2,1)
+
+        else
+            ind_e_new = searchsortedlast(energies,e_new)
+            insert!(energies, ind_e_new + 1, e_new) 
+            insert!(enDensityDict, ind_e_new + 1, minimum(enDensityDict))
+            return (energies,enDensityDict,1)
+
         end
         
     end
 end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+    prev_WL(N,edo,HPlist,geometry,pfmodel,mcsweep,energies,enDensityDict)
+Given the lattice size `N`, the initial configuration `edo`, the amino acid list `HPlist`, the geometry `geometry`, the interaction model `pfmodel`,
+the size of the Monte Carlo steps `mcsweeps`, the visited energies `energies`, the energy density array `enDensityDict` and a number of MC steps `n_sweeps`; returns 
+the visited energies during the Wang-Landau run.
+"""
+function prev_WL(N,edo,HPlist,geometry,pfmodel,mcsweep,energies,enDensityDict,n_sweeps)
+    for k in 1:(n_sweeps*mcsweep)
+        e1 = energy(N,edo,HPlist,geometry,pfmodel) # Initial energy.
+        npull_1 = countpull(N,edo,HPlist,geometry)[1]
+        # Generate new state by performing a pull-move.
+        edoaux,npull_2 = pullMove(N,edo,HPlist,geometry)[1:2]
+        e2 = energy(N,edoaux,HPlist,geometry,pfmodel) # Energy of the new state
+
+        if e2 ∉ energies
+            energies, enDensityDict, a = update_energy_bins!(e2,energies,enDensityDict,pfmodel::PF_model,5)
+        end
+
+        ind_e1 = searchsortedlast(energies,e1)
+        ind_e2 = searchsortedlast(energies,e2)
+        lg1 = enDensityDict[ind_e1]
+        lg2 = enDensityDict[ind_e2]
+        
+        lr = log(rand()) # Generate a random number.
+        pμν = lg1-lg2+log(npull_1)-log(npull_2)
+        if lr ≤ pμν # Accept the flip.
+            edo = edoaux # Accept the new configuration.  
+            enDensityDict[ind_e2] = lg2 + 1.0 # Update the density of states for the new energy (the log actually).
+        else
+            enDensityDict[ind_e1] = lg1 + 1.0 # Update the density of states for the new energy (the log actually).
+        end 
+    end
+    return energies
+end
 
 
 
@@ -406,12 +477,19 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,d::Int,nf::Int,pfmodel
     lnf = 1.0 # Initial value of updating value `log(f)`.
 
     # Before performing the actual simulation, I'd like to find most of the possible energies. This is crucial.
-    # To do this, I perform a Metropolis simulation over a range of adequate temperatures.
-    es = prev_met(N,180,0.001,3.0,25,protein,pfmodel)
+    # To do this, I perform a Metropolis simulation over a range of adequate temperatures, then, I perform a preliminary 
+    # WL simulation to explore the energy landscape more thoroughly.
+    es = prev_met(N,100,0.001,5.0,10,protein,pfmodel) # preliminary Metropolis run.
     energies, enDensityDict = energy_bins(es,pfmodel) # enDensityDict contains ln(g(E)) for all of the energies. Initially ln(g(E)) = 0.
+    energies = prev_WL(N,edo,HPlist,geometry,pfmodel,mcsweep,energies,enDensityDict,2000) # Preliminary WL run.
+    energies, enDensityDict = energy_bins(energies,pfmodel)
     @show(energies)
     
      
+
+
+
+
     # Now I perform the actual simulation. 
 
     n_iters = num_iters(d,nf)
@@ -420,78 +498,144 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,d::Int,nf::Int,pfmodel
     err_vec = zeros(Float64,n_iters)
     min_edo = copy(edo) # This will contain the state of minimum energy.
 
-    timeelpased = @elapsed for l in 1:n_iters # This is the number of iterations it takes to make lnf sufficiently small.
-        println("cont1= $cont1 /$n_iters")
-        cont1 = cont1+1 # Update the counter.
-        localenergies = zeros(Int64,length(enDensityDict)) # Stores the number of times each energy is visted during the current iteration. This is the histogram.
+    if pfmodel.pf_name == Full1 || pfmodel.pf_name == Full2
         
-        hCond = false # True if the histogram is flat enough.
-        err = 10.0
-        cont2 = 1
-        while (cont2 ≤ numlim2) && (hCond == false)
-
-            for k in 1:(1000*mcsweep) # Perform 1000 Monte Carlo steps.
-                e1 = energy(N,edo,HPlist,geometry,pfmodel) # Initial energy.
-                npull_1 = countpull(N,edo,HPlist,geometry)[1]
-                # Generate new state by performing a pull-move.
-                edoaux,npull_2 = pullMove(N,edo,HPlist,geometry)[1:2]
-                e2 = energy(N,edoaux,HPlist,geometry,pfmodel) # Energy of the new state
-
-                if e2 < energies[1]
-                    energies, enDensityDict = update_energy_bins!(e2,1,energies,enDensityDict,pfmodel)
-                    @show(energies)
-                    @show(enDensityDict)
-                    localenergies = zeros(Int64,length(enDensityDict))
-                    cont2 = 1
-                    min_edo = edoaux
-                elseif e2 > energies[end]
-                    energies, enDensityDict = update_energy_bins!(e2,2,energies,enDensityDict,pfmodel)
-                    @show(energies)
-                    @show(enDensityDict)
-                    localenergies = zeros(Int64,length(enDensityDict))
-                    cont2 = 1
+        timeelpased = @elapsed for l in 1:n_iters # This is the number of iterations it takes to make lnf sufficiently small.
+            println("cont1= $cont1 /$n_iters")
+            cont1 = cont1+1 # Update the counter.
+            localenergies = zeros(Int64,length(enDensityDict)) # Stores the number of times each energy is visted during the current iteration. This is the histogram.
+            
+            hCond = false # True if the histogram is flat enough.
+            err = 10.0
+            cont2 = 1
+            while (cont2 ≤ numlim2) && (hCond == false)
+    
+                for k in 1:(1000*mcsweep) # Perform 1000 Monte Carlo steps.
+                    e1 = energy(N,edo,HPlist,geometry,pfmodel) # Initial energy.
+                    npull_1 = countpull(N,edo,HPlist,geometry)[1]
+                    # Generate new state by performing a pull-move.
+                    edoaux,npull_2 = pullMove(N,edo,HPlist,geometry)[1:2]
+                    e2 = energy(N,edoaux,HPlist,geometry,pfmodel) # Energy of the new state
+    
+                    # If the new energy e2 is not among the visited energies, we need to modify the histogram and energy density arrays.
+                    if e2 < energies[1]
+                        energies, enDensityDict, cont2 = update_energy_bins!(e2,energies,enDensityDict,pfmodel,cont2)
+                        localenergies = zeros(Int64,length(enDensityDict))
+                        min_edo = edoaux
+                    elseif e2 > energies[end]
+                        energies, enDensityDict, cont2 = update_energy_bins!(e2,energies,enDensityDict,pfmodel,cont2)
+                        localenergies = zeros(Int64,length(enDensityDict))
+                    end
+                    
+    
+                    # Next, we need to obtain the density of states for the energies.
+                    ind_e1 = searchsortedlast(energies,e1)
+                    ind_e2 = searchsortedlast(energies,e2)
+                    lg1 = enDensityDict[ind_e1]
+                    lg2 = enDensityDict[ind_e2]
+        
+        
+                    lr = log(rand()) # Generate a random number.
+                    pμν = lg1-lg2+log(npull_1)-log(npull_2)
+                    if lr ≤ pμν # Accept the flip.
+                        edo = edoaux # Accept the new configuration.  
+                        enDensityDict[ind_e2] = lg2+lnf # Update the density of states for the new energy (the log actually).
+                        localenergies[ind_e2] = localenergies[ind_e2]+1 # Update the "histogram".
+        
+                    else
+                        enDensityDict[ind_e1] = lg1+lnf # Update the density of states for the new energy (the log actually).
+                        localenergies[ind_e1] = localenergies[ind_e1]+1  # Update the "histogram".
+                    end            
+        
                 end
-
-                # Next, we need to obtain the density of states for the energies.
-                ind_e1 = searchsortedlast(energies,e1)
-                ind_e2 = searchsortedlast(energies,e2)
-                lg1 = enDensityDict[ind_e1]
-                lg2 = enDensityDict[ind_e2]
     
+                hCond, err = histCondtion(localenergies,80,false)
+                if hCond == true 
+                    println("hCond = ",hCond)
+                end
     
-                lr = log(rand()) # Generate a random number.
-                pμν = lg1-lg2+log(npull_1)-log(npull_2)
-                if lr ≤ pμν # Accept the flip.
-                    edo = edoaux # Accept the new configuration.  
-                    enDensityDict[ind_e2] = lg2+lnf # Update the density of states for the new energy (the log actually).
-                    localenergies[ind_e2] = localenergies[ind_e2]+1 # Update the "histogram".
-    
-                else
-                    enDensityDict[ind_e1] = lg1+lnf # Update the density of states for the new energy (the log actually).
-                    localenergies[ind_e1] = localenergies[ind_e1]+1  # Update the "histogram".
-                end            
-    
+                cont2 = cont2 + 1
             end
-
-            hCond, err = histCondtion(localenergies,80,false)
-            if hCond == true 
-                println("hCond = ",hCond)
-            end
-
-            cont2 = cont2 + 1
+             
+            # After the first `while` is completed, we need to change the value of  the modifying constant `f`.
+            lnf = (lnf/d) # Update `f`.
+            hCond_vec[l] = hCond
+            err_vec[l] = err
+            @show(cont2)
         end
-         
-        # After the first `while` is completed, we need to change the value of  the modifying constant `f`.
-        lnf = (lnf/d) # Update `f`.
-        hCond_vec[l] = hCond
-        err_vec[l] = err
-        @show(cont2)
+
+    else
+
+        timeelpased = @elapsed for l in 1:n_iters # This is the number of iterations it takes to make lnf sufficiently small.
+            println("cont1= $cont1 /$n_iters")
+            cont1 = cont1+1 # Update the counter.
+            localenergies = zeros(Int64,length(enDensityDict)) # Stores the number of times each energy is visted during the current iteration. This is the histogram.
+            
+            hCond = false # True if the histogram is flat enough.
+            err = 10.0
+            cont2 = 1
+            while (cont2 ≤ numlim2) && (hCond == false)
+    
+                for k in 1:(1000*mcsweep) # Perform 1000 Monte Carlo steps.
+                    e1 = energy(N,edo,HPlist,geometry,pfmodel) # Initial energy.
+                    npull_1 = countpull(N,edo,HPlist,geometry)[1]
+                    # Generate new state by performing a pull-move.
+                    edoaux,npull_2 = pullMove(N,edo,HPlist,geometry)[1:2]
+                    e2 = energy(N,edoaux,HPlist,geometry,pfmodel) # Energy of the new state
+    
+                    # If the new energy e2 is not among the visited energies, we need to modify the histogram and energy density arrays.
+                    if e2 < energies[1]
+                        energies, enDensityDict, cont2 = update_energy_bins!(e2,energies,enDensityDict,pfmodel,cont2)
+                        localenergies = zeros(Int64,length(enDensityDict))
+                        min_edo = edoaux
+                    elseif e2 > energies[end]
+                        energies, enDensityDict, cont2 = update_energy_bins!(e2,energies,enDensityDict,pfmodel,cont2)
+                        localenergies = zeros(Int64,length(enDensityDict))
+                    end
+                    
+    
+                    # Next, we need to obtain the density of states for the energies.
+                    ind_e1 = searchsortedlast(energies,e1)
+                    ind_e2 = searchsortedlast(energies,e2)
+                    lg1 = enDensityDict[ind_e1]
+                    lg2 = enDensityDict[ind_e2]
+        
+        
+                    lr = log(rand()) # Generate a random number.
+                    pμν = lg1-lg2+log(npull_1)-log(npull_2)
+                    if lr ≤ pμν # Accept the flip.
+                        edo = edoaux # Accept the new configuration.  
+                        enDensityDict[ind_e2] = lg2+lnf # Update the density of states for the new energy (the log actually).
+                        localenergies[ind_e2] = localenergies[ind_e2]+1 # Update the "histogram".
+        
+                    else
+                        enDensityDict[ind_e1] = lg1+lnf # Update the density of states for the new energy (the log actually).
+                        localenergies[ind_e1] = localenergies[ind_e1]+1  # Update the "histogram".
+                    end            
+        
+                end
+    
+                hCond, err = histCondtion(localenergies,80,false)
+                if hCond == true 
+                    println("hCond = ",hCond)
+                end
+    
+                cont2 = cont2 + 1
+            end
+             
+            # After the first `while` is completed, we need to change the value of  the modifying constant `f`.
+            lnf = (lnf/d) # Update `f`.
+            hCond_vec[l] = hCond
+            err_vec[l] = err
+            @show(cont2)
+        end
+
     end
+
 
     # Declare a normalized dictionary.
     mrest = minimum(enDensityDict) # Choose the minimum density of states.
     lngE = Dict{Float64,Float64}(energies[k] => (enDensityDict[k]-mrest) for k in 1:length(energies))
-    
     #=
     if pfmodel.pf_name == Full1 || pfmodel.pf_name == Full2_model
         lngE = Dict{Float64,Float64}(energies[k+1] => (enDensityDict[k]-mrest) for k in 1:length(energies)-1)
@@ -499,7 +643,6 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,d::Int,nf::Int,pfmodel
         lngE = Dict{Float64,Float64}(energies[k] => (enDensityDict[k]-mrest) for k in 1:length(energies))
     end
     =#
-
 
     # Create the directory which will contain the data collected trough the simulation.
     pathstring = "./outputWL/"
@@ -520,7 +663,6 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,d::Int,nf::Int,pfmodel
     
     println("WL simulation completed.")
 end
-
 
 
 

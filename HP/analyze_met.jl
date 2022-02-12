@@ -402,9 +402,9 @@ function analyze_met_thermo(name::String)
 
 
     up = Float64[mean(us[k,:]) for k in 1:length(temperatures)]
-    uσs = Float64[std(us[k,:]) for k in 1:length(temperatures)]
+    uσs = Float64[std(us[k,:])/sqrt(nruns) for k in 1:length(temperatures)]
     cp = Float64[mean(cs[k,:]) for k in 1:length(temperatures)]
-    cσs = Float64[std(cs[k,:]) for k in 1:length(temperatures)]
+    cσs = Float64[std(cs[k,:])/sqrt(nruns) for k in 1:length(temperatures)]
 
     # Save the thermodynamic variables.
     mkdir(pathname1*"thermo_quantities")

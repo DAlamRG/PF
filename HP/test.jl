@@ -97,7 +97,7 @@ chignolin_Full1_triangular = Protein(hcat(Int16[10 for i in 1:10],Int16(1+6):Int
 #main_met(22,1000,0.01,1.0,600,16,chignolin_HP1_square,HP1_model,"MET_chignolin_HP1_square")
 
 
-wang_landau(24,chignolin_Full1_triangular,395,2,8,Full1_model,"WL_chignolin_Full1_triangular")
+wang_landau(24,chignolin_Full1_triangular,400,2,8,Full1_model,"WL_chignolin_Full1_triangular")
 
 
 #wang_landau(34,trp_cage_HPNX_triangular,395,2,8,HPNX_model,"WL_trp_cage_HPNX_triangular")

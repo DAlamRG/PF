@@ -366,7 +366,7 @@ to the same directory.
 function analyze_met_thermo(name::String)
 
     # Load the data.
-    pathname1 = "/Volumes/Sims/Resultados_sims/trp_cage/output"*"/"*name*"/"
+    pathname1 = "./output"*"/"*name*"/"
 
     nruns = Int(readdlm(pathname1*"nruns.csv",',')[1])
     HPlist = vec(readdlm(pathname1*"HPlist.csv",','))

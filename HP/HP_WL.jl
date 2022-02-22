@@ -480,6 +480,7 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,d::Int,nf::Int,pfmodel
     energies, enDensityDict = energy_bins(es,pfmodel) # enDensityDict contains ln(g(E)) for all of the energies. Initially ln(g(E)) = 0.
     energies = prev_WL(N,edo,HPlist,geometry,pfmodel,mcsweep,energies,enDensityDict,2000) # Preliminary WL run.
     energies, enDensityDict = energy_bins(energies,pfmodel)
+    @show(length(energies))
     @show(energies)
     
      

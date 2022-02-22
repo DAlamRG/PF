@@ -112,7 +112,7 @@ function states_met_run(name::String,nrun::Int)
     dim = length(initialconf[1,:])
     states = zeros(Int16,(n_amin,dim,ft))
     
-    pathname2 = "./output"*"/"*name*"/"*string(nrun)*"_"
+    pathname2 = "./output"*"/"*name*"/configsFolder/"*string(nrun)*"_"
     pulledindices = Int.(vec(readdlm(pathname2*"1_1.csv",',')))
     dirs = dirsf(Int8.(vec(readdlm(pathname2*"1_2.csv",','))))
     
@@ -232,9 +232,9 @@ function transform_positions_geom(edo,geometry::geometries)
         a1 = [1,1,0]
         a2 = [0,1,1] 
         a3 = [1,0,1] # Basis vectors for the Bravais lattice (fcc)
-        for k in 1:size(edo)[1]
+        for l in 1:size(edo)[1]
             i,j,k = edo[k,:]
-            newedo[k,:] = i*a1 + j*a2 + k*a3
+            newedo[l,:] = i*a1 + j*a2 + k*a3
         end
         return newedo
 
@@ -313,7 +313,7 @@ function analyze_met_geom(name::String)
     println("Finished reconstructing visited states")
     nruns = length(run_states)
 
-    rs = zeros(Float64,(length(temperatures),nruns)) # This arrays will contain the values for the geometric quantities.
+    rs = zeros(Float64,(length(temperatures),nruns)) # These arrays will contain the values for the geometric quantities.
     ees = zeros(Float64,(length(temperatures),nruns))
     for k in 1:nruns
         state = run_states[k]
@@ -336,10 +336,19 @@ function analyze_met_geom(name::String)
     drs = thermal_der(rs,temperatures)
     dees = thermal_der(ees,temperatures)
 
-    writedlm(pathname1*"rs.csv",rs,',')
-    writedlm(pathname1*"ees.csv",ees,',')
-    writedlm(pathname1*"drs.csv",drs,',')
-    writedlm(pathname1*"dees.csv",dees,',')
+    rp = Float64[mean(rs[k,:]) for k in 1:length(temperatures)]
+    rσs = Float64[std(rs[k,:])/sqrt(nruns) for k in 1:length(temperatures)]
+    eep = Float64[mean(ees[k,:]) for k in 1:length(temperatures)]
+    eeσs = Float64[std(ees[k,:])/sqrt(nruns) for k in 1:length(temperatures)]
+
+    mkdir(pathname1*"geometric_quantities")
+    writedlm(pathname1*"geometric_quantities/rp.csv",rp,',')
+    writedlm(pathname1*"geometric_quantities/rσs.csv",rσs,',')
+    writedlm(pathname1*"geometric_quantities/eep.csv",eep,',')
+    writedlm(pathname1*"geometric_quantities/eeσs.csv",eeσs,',')
+ 
+    writedlm(pathname1*"geometric_quantities/drs.csv",drs,',')
+    writedlm(pathname1*"geometric_quantities/dees.csv",dees,',')
 end
 
 

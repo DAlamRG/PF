@@ -62,39 +62,21 @@ villin = convert_Amin("LSDEDFKAVFGMTRSAFANLPLWLQQHLLKEKGLF") # https://www.rcsb.
 
 
 
-
-
-
-
-
-#chignolin_Full1_triangular = Protein(hcat(Int16[10 for i in 1:10],Int16(1+6):Int16(10+6)), translate_HPlist(chignolin,Full1,true),triangular2D)
-#chignolin_HP1_fcc = Protein(hcat(Int16[10 for i in 1:10],Int16(1+6):Int16(10+6),hcat(Int16[10 for i in 1:10])), translate_HPlist(chignolin,HP1,true),fcc)
+#chignolin_HPNX_square = Protein(hcat(Int16[10 for i in 1:10],Int16(1+6):Int16(10+6)), translate_HPlist(chignolin,HPNX,true),square2D)
+#chignolin_HPNX_triangular = Protein(hcat(Int16[10 for i in 1:10],Int16(1+6):Int16(10+6)), translate_HPlist(chignolin,HPNX,true),triangular2D)
 #chignolin_HPNX_fcc = Protein(hcat(Int16[10 for i in 1:10],Int16(1+6):Int16(10+6),hcat(Int16[10 for i in 1:10])), translate_HPlist(chignolin,HPNX,true),fcc)
 
-
-chignolin_Full1_fcc = Protein(hcat(Int16[10 for i in 1:10],Int16(1+6):Int16(10+6),hcat(Int16[10 for i in 1:10])), translate_HPlist(chignolin,Full1,true),fcc)
-
-trp_cage_Full1_triangular = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int16(20+6)), translate_HPlist(trp_cage,Full1,true),triangular2D)
-
-#trp_cage_HPNX_triangular = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int16(20+6)), translate_HPlist(trp_cage,HPNX,true),triangular2D)
-#trp_cage_HPNX_triangular = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int16(20+6)), translate_HPlist(trp_cage,HPNX,true),triangular2D)
+#trp_cage_Full1_square = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int16(20+6)), translate_HPlist(trp_cage,Full1,true),square2D)
 #trp_cage_Full1_triangular = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int16(20+6)), translate_HPlist(trp_cage,Full1,true),triangular2D)
-
-#trp_cage_HPNX_fcc = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int16(20+6),Int16[10 for i in 1:20]),translate_HPlist(trp_cage,HPNX,true),fcc)
-#trp_cage_HPNX_fcc = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int16(20+6),Int16[10 for i in 1:20]),translate_HPlist(trp_cage,HPNX,true),fcc)
 #trp_cage_Full1_fcc = Protein(hcat(Int16[10 for i in 1:20],Int16(1+6):Int16(20+6),Int16[10 for i in 1:20]),translate_HPlist(trp_cage,Full1,true),fcc)
 
-
-
-
+villin_HPNX_square = Protein(hcat(Int16[15 for i in 1:35],Int16(1+6):Int16(35+6)), translate_HPlist(villin,HPNX,true),square2D)
+villin_HPNX_triangular = Protein(hcat(Int16[15 for i in 1:35],Int16(1+6):Int16(35+6)), translate_HPlist(villin,HPNX,true),triangular2D)
+villin_HPNX_fcc = Protein(hcat(Int16[15 for i in 1:35],Int16(1+6):Int16(35+6),Int16[15 for i in 1:35]), translate_HPlist(villin,HPNX,true),fcc)
 
 
 # "name" should follow the format "WL_chignolin_HP1_square"
 
 #display(@time main_met(22,1000,0.01,1.0,600,16,chignolin_HP1_square,HP1_model,"MET_chignolin_HP1_square"))
 
-
-#wang_landau(34,trp_cage_HP1_square,395,2,8,HP1_model,"WL_trp_cage_HP1_square")
-#wang_landau(24,chignolin_Full1_triangular,395,2,8,Full1_model,"WL_chignolin_Full1_triangular")
-
-wang_landau(24,chignolin_Full1_fcc,400,2,8,Full1_model,"WL_chignolin_Full1_fcc")
+wang_landau(44,villin_HPNX_square,460,3,7,HPNX_model,"WL_villin_HPNX_square")

@@ -1,2 +1,3 @@
 ### PF thesis
-This repository contains all of the code and literature for my protein folding project.
+This repository contains all of the code I wrote to perform Metropolis and Wang-Landau simulations 
+of HP-like models of protein folding. 

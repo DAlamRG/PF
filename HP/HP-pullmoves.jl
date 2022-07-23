@@ -1,4 +1,4 @@
-# Generalized pull-moves for both dimensions and the three geometries.
+# Generalised pull-moves for both dimensions and the three geometries.
 
 # First, declare the relevant structures for both dimensions.
 

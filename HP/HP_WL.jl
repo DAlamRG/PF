@@ -481,7 +481,6 @@ function wang_landau(N::Int,protein::Protein,numlim2::Int,d::Int,nf::Int,pfmodel
     energies = prev_WL(N,edo,HPlist,geometry,pfmodel,mcsweep,energies,enDensityDict,2000) # Preliminary WL run.
     energies, enDensityDict = energy_bins(energies,pfmodel)
     @show(length(energies))
-    @show(energies)
     
      
 

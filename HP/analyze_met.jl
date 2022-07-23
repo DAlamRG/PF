@@ -215,6 +215,7 @@ end
 
 
 """
+    transform_positions_geom(edo,geometry)
 Given a matrix `edo` encoding in it's rows the monomers' positions and a geometry `geometry`; returns another matrix of the same size with the
 actual positions according to the geometry.
 """
